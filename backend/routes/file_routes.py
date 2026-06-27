@@ -1,7 +1,10 @@
 from flask import Blueprint
 from flask import jsonify
 from flask import request
+import os
 
+from flask import send_file
+from services.file_service import download_file
 from flask_jwt_extended import jwt_required
 from flask_jwt_extended import get_jwt_identity
 from services.file_service import list_files
@@ -48,3 +51,25 @@ def get_files():
     response,status = list_files(user_id)
 
     return jsonify(response),status
+
+@file_bp.route("/<file_id>/download", methods=["GET"])
+@jwt_required()
+
+def download(file_id):
+
+    user_id = get_jwt_identity()
+
+    file, error, status = download_file(
+        file_id,
+        user_id
+    )
+
+    if error:
+
+        return jsonify(error), status
+
+    return send_file(
+        file["path"],
+        as_attachment=True,
+        download_name=file["originalName"]
+    )

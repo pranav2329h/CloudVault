@@ -115,3 +115,25 @@ def list_files(user_id):
         "files":result
 
     },200
+from models.file_model import get_file_by_id
+
+
+def download_file(file_id, user_id):
+
+    file = get_file_by_id(file_id)
+
+    if not file:
+
+        return None, {
+            "success": False,
+            "message": "File not found"
+        }, 404
+
+    if file["ownerId"] != user_id:
+
+        return None, {
+            "success": False,
+            "message": "Access denied"
+        }, 403
+
+    return file, None, 200

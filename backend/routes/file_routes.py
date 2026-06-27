@@ -2,7 +2,7 @@ from flask import Blueprint
 from flask import jsonify
 from flask import request
 import os
-
+from services.file_service import remove_file
 from flask import send_file
 from services.file_service import download_file
 from flask_jwt_extended import jwt_required
@@ -73,3 +73,17 @@ def download(file_id):
         as_attachment=True,
         download_name=file["originalName"]
     )
+
+@file_bp.route("/<file_id>",methods=["DELETE"])
+@jwt_required()
+
+def delete(file_id):
+
+    user_id = get_jwt_identity()
+
+    response,status = remove_file(
+        file_id,
+        user_id
+    )
+
+    return jsonify(response),status

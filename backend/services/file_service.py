@@ -137,3 +137,52 @@ def download_file(file_id, user_id):
         }, 403
 
     return file, None, 200
+
+import os
+
+from models.file_model import (
+    get_file_by_id,
+    delete_file
+)
+
+
+def remove_file(file_id, user_id):
+
+    file = get_file_by_id(file_id)
+
+    if not file:
+
+        return {
+
+            "success": False,
+
+            "message": "File not found"
+
+        },404
+
+
+    if file["ownerId"] != user_id:
+
+        return {
+
+            "success": False,
+
+            "message": "Access denied"
+
+        },403
+
+
+    if os.path.exists(file["path"]):
+
+        os.remove(file["path"])
+
+
+    delete_file(file_id)
+
+    return {
+
+        "success": True,
+
+        "message": "File deleted successfully"
+
+    },200

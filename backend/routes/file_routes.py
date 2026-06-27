@@ -4,7 +4,7 @@ from flask import request
 
 from flask_jwt_extended import jwt_required
 from flask_jwt_extended import get_jwt_identity
-
+from services.file_service import list_files
 from services.file_service import upload_file
 
 
@@ -37,3 +37,14 @@ def upload():
     )
 
     return jsonify(response),status 
+
+@file_bp.route("",methods=["GET"])
+@jwt_required()
+
+def get_files():
+
+    user_id = get_jwt_identity()
+
+    response,status = list_files(user_id)
+
+    return jsonify(response),status

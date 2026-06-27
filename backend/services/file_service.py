@@ -7,6 +7,8 @@ from models.file_model import create_file
 
 from config.config import Config
 
+from utils.helper import format_file_size
+
 
 ALLOWED_EXTENSIONS = {
     "pdf",
@@ -80,3 +82,36 @@ def upload_file(file,user_id):
         "message":"File uploaded successfully"
 
     },201
+
+from models.file_model import get_files_by_owner
+
+
+def list_files(user_id):
+
+    files = get_files_by_owner(user_id)
+
+    result = []
+
+    for file in files:
+
+        result.append({
+
+            "id":str(file["_id"]),
+
+            "filename":file["originalName"],
+
+            "size":format_file_size(file["size"]),
+
+            "type":file["type"]
+
+        })
+
+    return {
+
+        "success":True,
+
+        "count":len(result),
+
+        "files":result
+
+    },200

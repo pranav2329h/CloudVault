@@ -1,6 +1,8 @@
 from flask import Blueprint, request, jsonify
 from services.auth_service import register_user
 from services.auth_service import login_user
+from flask_jwt_extended import jwt_required
+from flask_jwt_extended import get_jwt_identity
 auth_bp = Blueprint("auth", __name__)
 
 
@@ -45,3 +47,14 @@ def login():
     response, status = login_user(email, password)
 
     return jsonify(response), status
+
+@auth_bp.route("/profile",methods=["GET"])
+@jwt_required()
+
+def profile():
+
+    user_id = get_jwt_identity()
+
+    response,status = get_user_profile(user_id)
+
+    return jsonify(response),status

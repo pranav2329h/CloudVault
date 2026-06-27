@@ -3,6 +3,7 @@ from flask_jwt_extended import create_access_token
 
 from models.user_model import find_user_by_email, create_user
 
+from models.user_model import find_user_by_id
 
 def register_user(name, email, password):
 
@@ -64,3 +65,32 @@ def login_user(email, password):
             "role": user["role"]
         }
     }, 200
+
+def get_user_profile(user_id):
+    
+    user = find_user_by_id(user_id)
+
+    if not user:
+
+        return {
+            "success": False,
+            "message": "User not found"
+        },404
+
+    return {
+
+        "success":True,
+
+        "user":{
+
+            "id":str(user["_id"]),
+
+            "name":user["name"],
+
+            "email":user["email"],
+
+            "role":user["role"]
+
+        }
+
+    },200

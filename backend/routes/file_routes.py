@@ -1,0 +1,39 @@
+from flask import Blueprint
+from flask import jsonify
+from flask import request
+
+from flask_jwt_extended import jwt_required
+from flask_jwt_extended import get_jwt_identity
+
+from services.file_service import upload_file
+
+
+file_bp = Blueprint("files",__name__)
+
+
+@file_bp.route("/upload",methods=["POST"])
+@jwt_required()
+
+def upload():
+
+    if "file" not in request.files:
+
+        return jsonify({
+
+            "success":False,
+
+            "message":"File is required"
+
+        }),400
+
+
+    file = request.files["file"]
+
+    user_id = get_jwt_identity()
+
+    response,status = upload_file(
+        file,
+        user_id
+    )
+
+    return jsonify(response),status 

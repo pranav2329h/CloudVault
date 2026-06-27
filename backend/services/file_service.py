@@ -9,6 +9,7 @@ from config.config import Config
 
 from utils.helper import format_file_size
 
+from models.file_model import update_file_name
 
 ALLOWED_EXTENSIONS = {
     "pdf",
@@ -184,5 +185,44 @@ def remove_file(file_id, user_id):
         "success": True,
 
         "message": "File deleted successfully"
+
+    },200
+
+def rename_file(file_id, user_id, new_name):
+    
+    file = get_file_by_id(file_id)
+
+    if not file:
+
+        return {
+
+            "success": False,
+
+            "message": "File not found"
+
+        },404
+
+
+    if file["ownerId"] != user_id:
+
+        return {
+
+            "success": False,
+
+            "message": "Access denied"
+
+        },403
+
+
+    update_file_name(
+        file_id,
+        new_name
+    )
+
+    return {
+
+        "success": True,
+
+        "message": "File renamed successfully"
 
     },200

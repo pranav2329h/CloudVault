@@ -9,6 +9,7 @@ from flask_jwt_extended import jwt_required
 from flask_jwt_extended import get_jwt_identity
 from services.file_service import list_files
 from services.file_service import upload_file
+from services.file_service import rename_file
 
 
 file_bp = Blueprint("files",__name__)
@@ -87,3 +88,37 @@ def delete(file_id):
     )
 
     return jsonify(response),status
+
+@file_bp.route("/<file_id>/rename", methods=["PUT"])
+@jwt_required()
+
+def rename(file_id):
+
+    data = request.get_json()
+
+    filename = data.get("filename")
+
+    if not filename:
+
+        return jsonify({
+
+            "success": False,
+
+            "message": "Filename is required"
+
+        }),400
+
+
+    user_id = get_jwt_identity()
+
+    response, status = rename_file(
+
+        file_id,
+
+        user_id,
+
+        filename
+
+    )
+
+    return jsonify(response), status

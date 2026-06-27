@@ -26,3 +26,25 @@ def delete_file(file_id):
     return files_collection.delete_one(
         {"_id": ObjectId(file_id)}
     )
+
+def update_file_name(file_id, new_name):
+    
+    return files_collection.update_one(
+
+        {
+
+            "_id": ObjectId(file_id)
+
+        },
+
+        {
+
+            "$set": {
+
+                "originalName": new_name
+
+            }
+
+        }
+
+    )

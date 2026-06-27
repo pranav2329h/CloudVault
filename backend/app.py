@@ -1,19 +1,22 @@
 from flask import Flask
 from flask_cors import CORS
-from database.db import db
 
-print(db.list_collection_names())
+from routes.auth_routes import auth_bp
+
 app = Flask(__name__)
 
 CORS(app)
+
+app.register_blueprint(auth_bp, url_prefix="/api/auth")
+
 
 @app.route("/")
 def home():
     return {
         "project": "CloudVault",
-        "version": "1.0.0",
-        "status": "Backend Running Successfully"
+        "status": "Running"
     }
+
 
 if __name__ == "__main__":
     app.run(debug=True)

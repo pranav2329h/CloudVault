@@ -1,11 +1,22 @@
-output "project_name" {
+output "vpc_id" {
+  value = module.network.vpc_id
+}
 
-  value = var.project_name
+output "public_subnet_id" {
+  value = module.network.public_subnet_id
+}
+
+output "internet_gateway_id" {
+  value = module.network.internet_gateway_id
+}
+output "ec2_public_ip" {
+
+  value = module.compute.public_ip
 
 }
 
-output "region" {
+output "instance_id" {
 
-  value = var.aws_region
+  value = module.compute.instance_id
 
 }

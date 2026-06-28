@@ -1,44 +1,20 @@
-variable "aws_region" {
-
-  description = "AWS Region"
-
-  type = string
-
-}
-
 variable "project_name" {
-
-  description = "Project Name"
-
   type = string
-
 }
 
 variable "environment" {
-
-  description = "Environment"
-
   type = string
-
 }
 
 variable "instance_type" {
-
-  description = "EC2 Instance Type"
-
-  type = string
-
-}
-
-variable "vpc_cidr" {
   type = string
 }
 
-variable "public_subnet_cidr" {
+variable "subnet_id" {
   type = string
 }
 
-variable "availability_zone" {
+variable "security_group_id" {
   type = string
 }
 

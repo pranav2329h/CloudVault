@@ -1,15 +1,10 @@
-venv/
-__pycache__/
-.env
-*.pyc
 # Terraform
-.terraform/
+**/.terraform/
 *.tfstate
 *.tfstate.*
+crash.log
 terraform.tfvars
 terraform.tfvars.json
-crash.log
-.terraform.lock.hcl
 
 # Python
 venv/

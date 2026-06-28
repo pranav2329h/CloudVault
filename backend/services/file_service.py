@@ -29,48 +29,39 @@ def allowed_file(filename):
            filename.rsplit(".",1)[1].lower() in ALLOWED_EXTENSIONS
 
 
-def upload_file(file,user_id):
+import uuid
 
-    if file.filename == "":
+from werkzeug.utils import secure_filename
 
-        return {
-            "success":False,
-            "message":"No file selected"
-        },400
+from services.s3_service import upload_to_s3
+
+from models.file_model import create_file
 
 
-    if not allowed_file(file.filename):
-
-        return {
-            "success":False,
-            "message":"Unsupported file type"
-        },400
-
+def upload_file(file, user_id):
 
     original_name = secure_filename(file.filename)
 
-    unique_filename = f"{uuid.uuid4()}_{original_name}"
+    unique_name = f"{uuid.uuid4()}_{original_name}"
 
-    upload_path = os.path.join(
-        Config.UPLOAD_FOLDER,
-        unique_filename
+    s3_key = f"users/{user_id}/{unique_name}"
+
+    upload_to_s3(
+        file,
+        s3_key
     )
-
-    file.save(upload_path)
 
     metadata = {
 
-        "filename":unique_filename,
+        "filename": unique_name,
 
-        "originalName":original_name,
+        "originalName": original_name,
 
-        "ownerId":user_id,
+        "ownerId": user_id,
 
-        "size":os.path.getsize(upload_path),
+        "type": file.content_type,
 
-        "type":file.content_type,
-
-        "path":upload_path
+        "s3Key": s3_key
 
     }
 
@@ -78,9 +69,9 @@ def upload_file(file,user_id):
 
     return {
 
-        "success":True,
+        "success": True,
 
-        "message":"File uploaded successfully"
+        "message": "Uploaded Successfully"
 
     },201
 

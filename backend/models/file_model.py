@@ -1,50 +1,35 @@
-from database.db import db
-from bson.objectid import ObjectId
-
-files_collection = db["files"]
+from datetime import datetime
 
 
-def create_file(file_data):
-    return files_collection.insert_one(file_data)
+class File:
 
+    def __init__(
+        self,
+        filename,
+        original_name,
+        s3_key,
+        file_url,
+        file_size,
+        file_type,
+        user_id,
+    ):
+        self.filename = filename
+        self.original_name = original_name
+        self.s3_key = s3_key
+        self.file_url = file_url
+        self.file_size = file_size
+        self.file_type = file_type
+        self.user_id = user_id
+        self.uploaded_at = datetime.utcnow()
 
-def get_files_by_owner(owner_id):
-    return list(
-        files_collection.find(
-            {"ownerId": owner_id}
-        ).sort("_id", -1)
-    )
-
-
-def get_file_by_id(file_id):
-    return files_collection.find_one(
-        {"_id": ObjectId(file_id)}
-    )
-
-
-def delete_file(file_id):
-    return files_collection.delete_one(
-        {"_id": ObjectId(file_id)}
-    )
-
-def update_file_name(file_id, new_name):
-    
-    return files_collection.update_one(
-
-        {
-
-            "_id": ObjectId(file_id)
-
-        },
-
-        {
-
-            "$set": {
-
-                "originalName": new_name
-
-            }
-
+    def to_dict(self):
+        return {
+            "filename": self.filename,
+            "original_name": self.original_name,
+            "s3_key": self.s3_key,
+            "file_url": self.file_url,
+            "file_size": self.file_size,
+            "file_type": self.file_type,
+            "user_id": self.user_id,
+            "uploaded_at": self.uploaded_at,
         }
-
-    )

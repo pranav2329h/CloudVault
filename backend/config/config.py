@@ -5,6 +5,8 @@ load_dotenv()
 
 class Config:
 
+    PRESIGNED_URL_EXPIRY = int(os.getenv("PRESIGNED_URL_EXPIRY", "300"))
+
     MONGO_URI = os.getenv("MONGO_URI")
 
     DATABASE_NAME = os.getenv("DATABASE_NAME", "cloudvault")

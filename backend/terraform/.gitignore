@@ -13,5 +13,10 @@ __pycache__/
 
 # Environment
 .env
+# Private Keys
+*.pem
+*.ppk
 
-jenkins.pem 
+# Specifically ignore Jenkins key
+backend/terraform/Jenkins.pem
+backend/terraform/jenkins.pem

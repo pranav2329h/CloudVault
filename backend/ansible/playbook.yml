@@ -1,0 +1,14 @@
+---
+- name: Configure CloudVault Server
+
+  hosts: cloudvault
+
+  become: true
+
+  roles:
+
+    - docker
+
+    - git
+
+    - cloudvault

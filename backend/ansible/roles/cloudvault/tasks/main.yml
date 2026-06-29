@@ -1,0 +1,19 @@
+---
+- name: Clone Repository
+  git:
+    repo: "{{ github_repo }}"
+    dest: "{{ project_path }}"
+    version: main
+    force: yes
+
+- name: Pull Docker Image
+  command: docker pull {{ docker_image }}
+
+- name: Start Backend Container
+  command: >
+    docker run -d
+    --name cloudvault-backend
+    -p 5000:5000
+    --restart always
+    {{ docker_image }}
+  ignore_errors: yes

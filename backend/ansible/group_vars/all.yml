@@ -1,0 +1,5 @@
+github_repo: "https://github.com/pranav2329h/CloudVault.git"
+
+project_path: "/home/ubuntu/CloudVault"
+
+docker_image: "pranav2329h/cloudvault-backend:v1"

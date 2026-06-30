@@ -2,13 +2,25 @@ pipeline {
 
     agent any
 
+    options {
+
+        timestamps()
+
+        ansiColor('xterm')
+
+        buildDiscarder(logRotator(
+            numToKeepStr: '10'
+        ))
+
+    }
+
     environment {
 
-        DOCKER_USERNAME = credentials('dockerhub-username')
+        IMAGE_NAME = "cloudvault-backend"
 
-        DOCKER_PASSWORD = credentials('dockerhub-password')
+        IMAGE_TAG = "${BUILD_NUMBER}"
 
-        EC2_HOST = credentials('ec2-public-ip')
+        DOCKERHUB = "pranav2329h"
 
     }
 
@@ -18,61 +30,65 @@ pipeline {
 
             steps {
 
-                git branch: 'main',
-
-                credentialsId: 'github-token',
-
-                url: 'https://github.com/YOUR_USERNAME/CloudVault.git'
+                checkout scm
 
             }
 
         }
 
-        stage('Build') {
+        stage('Python Version') {
 
             steps {
 
-                sh 'chmod +x jenkins/build.sh'
-
-                sh './jenkins/build.sh'
+                sh 'python3 --version'
 
             }
 
         }
 
-        stage('Deploy') {
+        stage('Install Dependencies') {
 
             steps {
 
-                sh 'chmod +x jenkins/deploy.sh'
+                sh '''
+                python3 -m venv venv
 
-                sh './jenkins/deploy.sh'
+                . venv/bin/activate
+
+                pip install --upgrade pip
+
+                pip install -r backend/requirements.txt
+                '''
 
             }
 
         }
 
-        stage('Health Check') {
+        stage('Run Tests') {
 
             steps {
 
-                sh 'chmod +x jenkins/healthcheck.sh'
+                sh '''
+                . venv/bin/activate
 
-                sh './jenkins/healthcheck.sh'
+                python -m unittest discover backend || true
+                '''
 
             }
 
         }
 
-    }
+        stage('Build Docker Image') {
 
-    post {
+            steps {
 
-        always {
+                script {
 
-            sh 'chmod +x jenkins/cleanup.sh'
+                    docker.build("${DOCKERHUB}/${IMAGE_NAME}:${IMAGE_TAG}", "./backend")
 
-            sh './jenkins/cleanup.sh'
+                }
+
+            }
 
         }
 

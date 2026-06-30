@@ -1,0 +1,81 @@
+pipeline {
+
+    agent any
+
+    environment {
+
+        DOCKER_USERNAME = credentials('dockerhub-username')
+
+        DOCKER_PASSWORD = credentials('dockerhub-password')
+
+        EC2_HOST = credentials('ec2-public-ip')
+
+    }
+
+    stages {
+
+        stage('Checkout') {
+
+            steps {
+
+                git branch: 'main',
+
+                credentialsId: 'github-token',
+
+                url: 'https://github.com/YOUR_USERNAME/CloudVault.git'
+
+            }
+
+        }
+
+        stage('Build') {
+
+            steps {
+
+                sh 'chmod +x jenkins/build.sh'
+
+                sh './jenkins/build.sh'
+
+            }
+
+        }
+
+        stage('Deploy') {
+
+            steps {
+
+                sh 'chmod +x jenkins/deploy.sh'
+
+                sh './jenkins/deploy.sh'
+
+            }
+
+        }
+
+        stage('Health Check') {
+
+            steps {
+
+                sh 'chmod +x jenkins/healthcheck.sh'
+
+                sh './jenkins/healthcheck.sh'
+
+            }
+
+        }
+
+    }
+
+    post {
+
+        always {
+
+            sh 'chmod +x jenkins/cleanup.sh'
+
+            sh './jenkins/cleanup.sh'
+
+        }
+
+    }
+
+}

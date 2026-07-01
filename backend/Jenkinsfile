@@ -1,97 +1,100 @@
 pipeline {
-
     agent any
 
     options {
-
         timestamps()
-
         ansiColor('xterm')
-
-        buildDiscarder(logRotator(
-            numToKeepStr: '10'
-        ))
-
+        buildDiscarder(logRotator(numToKeepStr: '10'))
     }
 
     environment {
-
-        IMAGE_NAME = "cloudvault-backend"
-
-        IMAGE_TAG = "${BUILD_NUMBER}"
-
-        DOCKERHUB = "pranav2329h"
-
+        APP_NAME = "cloudvault-backend"
+        PYTHON = "python3"
     }
 
     stages {
 
-        stage('Checkout') {
-
+        stage('Checkout Source') {
             steps {
-
+                echo "========== CHECKOUT =========="
                 checkout scm
-
             }
+        }
 
+        stage('Workspace Info') {
+            steps {
+                sh '''
+                echo "Current Directory:"
+                pwd
+
+                echo ""
+                echo "Workspace Files:"
+                ls -la
+                '''
+            }
         }
 
         stage('Python Version') {
-
             steps {
-
-                sh 'python3 --version'
-
+                sh '''
+                python3 --version
+                pip3 --version
+                '''
             }
+        }
 
+        stage('Create Virtual Environment') {
+            steps {
+                dir('backend') {
+                    sh '''
+                    python3 -m venv venv
+
+                    . venv/bin/activate
+
+                    pip install --upgrade pip
+                    '''
+                }
+            }
         }
 
         stage('Install Dependencies') {
-
             steps {
+                dir('backend') {
+                    sh '''
+                    . venv/bin/activate
 
-                sh '''
-                python3 -m venv venv
-
-                . venv/bin/activate
-
-                pip install --upgrade pip
-
-                pip install -r backend/requirements.txt
-                '''
-
-            }
-
-        }
-
-        stage('Run Tests') {
-
-            steps {
-
-                sh '''
-                . venv/bin/activate
-
-                python -m unittest discover backend || true
-                '''
-
-            }
-
-        }
-
-        stage('Build Docker Image') {
-
-            steps {
-
-                script {
-
-                    docker.build("${DOCKERHUB}/${IMAGE_NAME}:${IMAGE_TAG}", "./backend")
-
+                    pip install -r requirements.txt
+                    '''
                 }
-
             }
+        }
 
+        stage('Verify Installation') {
+            steps {
+                dir('backend') {
+                    sh '''
+                    . venv/bin/activate
+
+                    pip list
+                    '''
+                }
+            }
         }
 
     }
 
+    post {
+
+        success {
+            echo "Stage 1 Completed Successfully"
+        }
+
+        failure {
+            echo "Pipeline Failed"
+        }
+
+        always {
+            cleanWs()
+        }
+    }
 }

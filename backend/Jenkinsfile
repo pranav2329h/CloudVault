@@ -185,24 +185,20 @@ stage('Health Check') {
 
     post {
 
+    success {
+        echo "Pipeline Completed Successfully"
+    }
 
-        success {
-            echo "Stage 1 Completed Successfully"
-        }
+    failure {
+        echo "Pipeline Failed"
+    }
 
-        failure {
-            echo "Pipeline Failed"
-        }
-
-        always {
-            cleanWs()
-        }
-        always {
+    always {
 
         cleanWs()
 
         sh 'docker image prune -af || true'
 
     }
-    }
+}
 }

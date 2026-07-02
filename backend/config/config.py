@@ -5,6 +5,8 @@ load_dotenv()
 
 class Config:
 
+    DEBUG = False
+
     PRESIGNED_URL_EXPIRY = int(os.getenv("PRESIGNED_URL_EXPIRY", "300"))
 
     MONGO_URI = os.getenv("MONGO_URI")

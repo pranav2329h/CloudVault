@@ -139,10 +139,52 @@ stage('Push Docker Image') {
     }
 
 }
+stage('Deploy to EC2') {
+
+    steps {
+
+        sshagent(credentials: ['ec2-ssh-key']) {
+
+            withCredentials([
+                string(
+                    credentialsId: 'deployment-ip',
+                    variable: 'DEPLOY_HOST'
+                )
+            ]) {
+
+                sh '''
+                chmod +x /var/lib/jenkins/scripts/deploy.sh
+
+                /var/lib/jenkins/scripts/deploy.sh
+                '''
+            }
+        }
+    }
+}
+stage('Health Check') {
+
+    steps {
+
+        withCredentials([
+            string(
+                credentialsId: 'deployment-ip',
+                variable: 'DEPLOY_HOST'
+            )
+        ]) {
+
+            sh '''
+            sleep 15
+
+            curl http://$DEPLOY_HOST:5000/health
+            '''
+        }
+    }
+}
 
     }
 
     post {
+
 
         success {
             echo "Stage 1 Completed Successfully"
@@ -155,5 +197,12 @@ stage('Push Docker Image') {
         always {
             cleanWs()
         }
+        always {
+
+        cleanWs()
+
+        sh 'docker image prune -af || true'
+
+    }
     }
 }

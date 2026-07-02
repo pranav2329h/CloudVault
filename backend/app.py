@@ -5,14 +5,17 @@ from flask_jwt_extended import JWTManager
 from config.config import Config
 from routes.auth_routes import auth_bp
 
+
 app = Flask(__name__)
 
-app.config["JWT_SECRET_KEY"] = Config.JWT_SECRET_KEY
+# Load all configuration from Config class
+app.config.from_object(Config)
 
+# Initialize extensions
 jwt = JWTManager(app)
-
 CORS(app)
 
+# Register Blueprints
 app.register_blueprint(auth_bp, url_prefix="/api/auth")
 
 
@@ -20,13 +23,22 @@ app.register_blueprint(auth_bp, url_prefix="/api/auth")
 def home():
     return {
         "project": "CloudVault",
-        "status": "Running"
-    }
+        "status": "Running",
+        "version": "1.0.0"
+    }, 200
+
+
+@app.route("/health")
+def health():
+    return {
+        "status": "UP",
+        "service": "CloudVault"
+    }, 200
 
 
 if __name__ == "__main__":
     app.run(
         host="0.0.0.0",
         port=5000,
-        debug=True
+        debug=Config.DEBUG
     )

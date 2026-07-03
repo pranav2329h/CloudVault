@@ -1,6 +1,9 @@
 pipeline {
-
     agent any
+
+    tools {
+        sonarQube 'SonarScanner'
+    }
 
     options {
         timestamps()
@@ -17,7 +20,6 @@ pipeline {
         IMAGE_NAME = "${DOCKER_USERNAME}/${APP_NAME}"
 
         BUILD_TAG = "${BUILD_NUMBER}"
-
     }
 
     stages {
@@ -32,7 +34,11 @@ pipeline {
         stage('Workspace Info') {
             steps {
                 sh '''
+                echo "Current Directory"
                 pwd
+
+                echo ""
+                echo "Workspace Files"
                 ls -la
                 '''
             }
@@ -64,7 +70,6 @@ pipeline {
         stage('Install Dependencies') {
             steps {
                 dir('backend') {
-
                     sh '''
                     . venv/bin/activate
 
@@ -74,62 +79,42 @@ pipeline {
             }
         }
 
-        stage('Code Lint') {
-
-            steps {
-
-                dir('backend') {
-
-                    sh '''
-                    . venv/bin/activate
-
-                    pip install flake8
-
-                    flake8 . || true
-                    '''
-
-                }
-
-            }
-
-        }
-
-        stage('Unit Test') {
-
-            steps {
-
-                dir('backend') {
-
-                    sh '''
-                    . venv/bin/activate
-
-                    pip install pytest
-
-                    pytest || true
-                    '''
-
-                }
-
-            }
-
-        }
-
         stage('Verify Installation') {
-
             steps {
-
                 dir('backend') {
-
                     sh '''
                     . venv/bin/activate
 
                     pip list
                     '''
-
                 }
-
             }
+        }
 
+        stage('SonarQube Analysis') {
+            steps {
+                dir('backend') {
+                    withSonarQubeEnv('SonarQube') {
+
+                        sh '''
+                        ${SONAR_SCANNER_HOME}/bin/sonar-scanner \
+                        -Dsonar.projectKey=CloudVault \
+                        -Dsonar.projectName=CloudVault \
+                        -Dsonar.sources=. \
+                        -Dsonar.python.version=3 \
+                        -Dsonar.sourceEncoding=UTF-8
+                        '''
+                    }
+                }
+            }
+        }
+
+        stage('Quality Gate') {
+            steps {
+                timeout(time: 5, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
+                }
+            }
         }
 
         stage('Build Docker Image') {
@@ -144,23 +129,8 @@ pipeline {
                     -t ${IMAGE_NAME}:latest \
                     .
                     '''
-
                 }
-
             }
-
-        }
-
-        stage('Docker Image Scan') {
-
-            steps {
-
-                sh '''
-                trivy image ${IMAGE_NAME}:latest || true
-                '''
-
-            }
-
         }
 
         stage('Docker Login') {
@@ -180,11 +150,8 @@ pipeline {
                     -u "$DOCKER_USER" \
                     --password-stdin
                     '''
-
                 }
-
             }
-
         }
 
         stage('Push Docker Image') {
@@ -196,9 +163,7 @@ pipeline {
 
                 docker push ${IMAGE_NAME}:latest
                 '''
-
             }
-
         }
 
         stage('Deploy to EC2') {
@@ -219,13 +184,9 @@ pipeline {
 
                         /var/lib/jenkins/scripts/deploy.sh
                         '''
-
                     }
-
                 }
-
             }
-
         }
 
         stage('Health Check') {
@@ -240,45 +201,15 @@ pipeline {
                 ]) {
 
                     sh '''
+                    echo "Waiting for application..."
+
                     sleep 20
 
-                    curl http://$DEPLOY_HOST:5000/health
+                    curl --fail http://$DEPLOY_HOST:5000/health
                     '''
-
                 }
-
             }
-
         }
-
-        stage('Build Information') {
-
-            steps {
-
-                sh '''
-                echo "===== Docker Images ====="
-
-                docker images
-
-                echo ""
-
-                echo "===== Running Containers ====="
-
-                docker ps -a
-
-                echo ""
-
-                hostname
-
-                echo ""
-
-                df -h
-                '''
-
-            }
-
-        }
-
     }
 
     post {
@@ -286,25 +217,18 @@ pipeline {
         success {
 
             echo "Pipeline Completed Successfully"
-
         }
 
         failure {
 
             echo "Pipeline Failed"
-
         }
 
         always {
 
             cleanWs()
 
-            sh '''
-            docker system prune -af --volumes || true
-            '''
-
+            sh 'docker image prune -af || true'
         }
-
     }
-
 }

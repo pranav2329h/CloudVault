@@ -1,10 +1,6 @@
 pipeline {
     agent any
 
-    tools {
-        sonarQube 'SonarScanner'
-    }
-
     options {
         timestamps()
         ansiColor('xterm')
@@ -14,12 +10,10 @@ pipeline {
     environment {
 
         APP_NAME = "cloudvault-backend"
-
         DOCKER_USERNAME = "pranav2329h"
-
         IMAGE_NAME = "${DOCKER_USERNAME}/${APP_NAME}"
-
         BUILD_TAG = "${BUILD_NUMBER}"
+
     }
 
     stages {
@@ -34,11 +28,7 @@ pipeline {
         stage('Workspace Info') {
             steps {
                 sh '''
-                echo "Current Directory"
                 pwd
-
-                echo ""
-                echo "Workspace Files"
                 ls -la
                 '''
             }
@@ -93,36 +83,47 @@ pipeline {
 
         stage('SonarQube Analysis') {
 
-    steps {
+            steps {
 
-        dir('backend') {
+                dir('backend') {
 
-            script {
+                    script {
 
-                def scannerHome = tool 'SonarScanner'
+                        def scannerHome = tool('SonarScanner')
 
-                withSonarQubeEnv('SonarQube') {
+                        withSonarQubeEnv('SonarQube') {
 
-                    sh """
-                        ${scannerHome}/bin/sonar-scanner \
-                        -Dsonar.projectKey=CloudVault \
-                        -Dsonar.projectName=CloudVault \
-                        -Dsonar.sources=. \
-                        -Dsonar.python.version=3 \
-                        -Dsonar.sourceEncoding=UTF-8
-                    """
+                            sh """
+                            ${scannerHome}/bin/sonar-scanner \
+                            -Dsonar.projectKey=CloudVault \
+                            -Dsonar.projectName=CloudVault \
+                            -Dsonar.sources=. \
+                            -Dsonar.python.version=3 \
+                            -Dsonar.sourceEncoding=UTF-8
+                            """
+
+                        }
+
+                    }
+
                 }
+
             }
+
         }
-    }
-}
 
         stage('Quality Gate') {
+
             steps {
+
                 timeout(time: 5, unit: 'MINUTES') {
+
                     waitForQualityGate abortPipeline: true
+
                 }
+
             }
+
         }
 
         stage('Build Docker Image') {
@@ -131,14 +132,17 @@ pipeline {
 
                 dir('backend') {
 
-                    sh '''
+                    sh """
                     docker build \
                     -t ${IMAGE_NAME}:${BUILD_TAG} \
                     -t ${IMAGE_NAME}:latest \
                     .
-                    '''
+                    """
+
                 }
+
             }
+
         }
 
         stage('Docker Login') {
@@ -158,20 +162,24 @@ pipeline {
                     -u "$DOCKER_USER" \
                     --password-stdin
                     '''
+
                 }
+
             }
+
         }
 
         stage('Push Docker Image') {
 
             steps {
 
-                sh '''
+                sh """
                 docker push ${IMAGE_NAME}:${BUILD_TAG}
-
                 docker push ${IMAGE_NAME}:latest
-                '''
+                """
+
             }
+
         }
 
         stage('Deploy to EC2') {
@@ -180,21 +188,15 @@ pipeline {
 
                 sshagent(credentials: ['ec2-ssh-key']) {
 
-                    withCredentials([
-                        string(
-                            credentialsId: 'deployment-ip',
-                            variable: 'DEPLOY_HOST'
-                        )
-                    ]) {
+                    sh '''
+                    chmod +x /var/lib/jenkins/scripts/deploy.sh
+                    /var/lib/jenkins/scripts/deploy.sh
+                    '''
 
-                        sh '''
-                        chmod +x /var/lib/jenkins/scripts/deploy.sh
-
-                        /var/lib/jenkins/scripts/deploy.sh
-                        '''
-                    }
                 }
+
             }
+
         }
 
         stage('Health Check') {
@@ -209,15 +211,19 @@ pipeline {
                 ]) {
 
                     sh '''
-                    echo "Waiting for application..."
+                    echo "Waiting for Application..."
 
                     sleep 20
 
                     curl --fail http://$DEPLOY_HOST:5000/health
                     '''
+
                 }
+
             }
+
         }
+
     }
 
     post {
@@ -225,11 +231,13 @@ pipeline {
         success {
 
             echo "Pipeline Completed Successfully"
+
         }
 
         failure {
 
             echo "Pipeline Failed"
+
         }
 
         always {
@@ -237,6 +245,9 @@ pipeline {
             cleanWs()
 
             sh 'docker image prune -af || true'
+
         }
+
     }
+
 }

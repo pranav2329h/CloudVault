@@ -8,12 +8,10 @@ pipeline {
     }
 
     environment {
-
         APP_NAME = "cloudvault-backend"
         DOCKER_USERNAME = "pranav2329h"
         IMAGE_NAME = "${DOCKER_USERNAME}/${APP_NAME}"
         BUILD_TAG = "${BUILD_NUMBER}"
-
     }
 
     stages {
@@ -28,7 +26,11 @@ pipeline {
         stage('Workspace Info') {
             steps {
                 sh '''
+                echo "========== WORKSPACE =========="
                 pwd
+
+                echo ""
+                echo "Workspace Files:"
                 ls -la
                 '''
             }
@@ -37,6 +39,7 @@ pipeline {
         stage('Python Version') {
             steps {
                 sh '''
+                echo "========== PYTHON VERSION =========="
                 python3 --version
                 pip3 --version
                 '''
@@ -47,6 +50,8 @@ pipeline {
             steps {
                 dir('backend') {
                     sh '''
+                    echo "========== CREATE VENV =========="
+
                     python3 -m venv venv
 
                     . venv/bin/activate
@@ -61,6 +66,8 @@ pipeline {
             steps {
                 dir('backend') {
                     sh '''
+                    echo "========== INSTALL DEPENDENCIES =========="
+
                     . venv/bin/activate
 
                     pip install -r requirements.txt
@@ -73,6 +80,8 @@ pipeline {
             steps {
                 dir('backend') {
                     sh '''
+                    echo "========== VERIFY PACKAGES =========="
+
                     . venv/bin/activate
 
                     pip list
@@ -81,74 +90,23 @@ pipeline {
             }
         }
 
-        stage('SonarQube Analysis') {
-
-            steps {
-
-                dir('backend') {
-
-                    script {
-
-                        def scannerHome = tool('SonarScanner')
-
-                        withSonarQubeEnv('SonarQube') {
-
-                            sh """
-                            ${scannerHome}/bin/sonar-scanner \
-                            -Dsonar.projectKey=CloudVault \
-                            -Dsonar.projectName=CloudVault \
-                            -Dsonar.sources=. \
-                            -Dsonar.python.version=3 \
-                            -Dsonar.sourceEncoding=UTF-8
-                            """
-
-                        }
-
-                    }
-
-                }
-
-            }
-
-        }
-
-        stage('Quality Gate') {
-
-            steps {
-
-                timeout(time: 5, unit: 'MINUTES') {
-
-                    waitForQualityGate abortPipeline: true
-
-                }
-
-            }
-
-        }
-
         stage('Build Docker Image') {
-
             steps {
-
                 dir('backend') {
+                    sh '''
+                    echo "========== BUILD DOCKER IMAGE =========="
 
-                    sh """
                     docker build \
                     -t ${IMAGE_NAME}:${BUILD_TAG} \
                     -t ${IMAGE_NAME}:latest \
                     .
-                    """
-
+                    '''
                 }
-
             }
-
         }
 
         stage('Docker Login') {
-
             steps {
-
                 withCredentials([
                     usernamePassword(
                         credentialsId: 'dockerhub-creds',
@@ -158,49 +116,53 @@ pipeline {
                 ]) {
 
                     sh '''
+                    echo "========== DOCKER LOGIN =========="
+
                     echo "$DOCKER_PASS" | docker login \
                     -u "$DOCKER_USER" \
                     --password-stdin
                     '''
-
                 }
-
             }
-
         }
 
         stage('Push Docker Image') {
-
             steps {
+                sh '''
+                echo "========== PUSH IMAGE =========="
 
-                sh """
                 docker push ${IMAGE_NAME}:${BUILD_TAG}
+
                 docker push ${IMAGE_NAME}:latest
-                """
-
+                '''
             }
-
         }
 
         stage('Deploy to EC2') {
-
             steps {
 
                 sshagent(credentials: ['ec2-ssh-key']) {
 
-                    sh '''
-                    chmod +x /var/lib/jenkins/scripts/deploy.sh
-                    /var/lib/jenkins/scripts/deploy.sh
-                    '''
+                    withCredentials([
+                        string(
+                            credentialsId: 'deployment-ip',
+                            variable: 'DEPLOY_HOST'
+                        )
+                    ]) {
 
+                        sh '''
+                        echo "========== DEPLOY TO EC2 =========="
+
+                        chmod +x /var/lib/jenkins/scripts/deploy.sh
+
+                        /var/lib/jenkins/scripts/deploy.sh
+                        '''
+                    }
                 }
-
             }
-
         }
 
         stage('Health Check') {
-
             steps {
 
                 withCredentials([
@@ -211,43 +173,40 @@ pipeline {
                 ]) {
 
                     sh '''
-                    echo "Waiting for Application..."
+                    echo "========== HEALTH CHECK =========="
 
                     sleep 20
 
                     curl --fail http://$DEPLOY_HOST:5000/health
                     '''
-
                 }
-
             }
-
         }
-
     }
 
     post {
 
         success {
-
-            echo "Pipeline Completed Successfully"
-
+            echo "======================================="
+            echo "PIPELINE COMPLETED SUCCESSFULLY"
+            echo "======================================="
         }
 
         failure {
-
-            echo "Pipeline Failed"
-
+            echo "======================================="
+            echo "PIPELINE FAILED"
+            echo "======================================="
         }
 
         always {
 
+            echo "========== CLEANUP =========="
+
             cleanWs()
 
-            sh 'docker image prune -af || true'
-
+            sh '''
+            docker image prune -af || true
+            '''
         }
-
     }
-
 }

@@ -8,10 +8,12 @@ pipeline {
     }
 
     environment {
+
         APP_NAME = "cloudvault-backend"
         DOCKER_USERNAME = "pranav2329h"
         IMAGE_NAME = "${DOCKER_USERNAME}/${APP_NAME}"
         BUILD_TAG = "${BUILD_NUMBER}"
+
     }
 
     stages {
@@ -26,11 +28,7 @@ pipeline {
         stage('Workspace Info') {
             steps {
                 sh '''
-                echo "========== WORKSPACE =========="
                 pwd
-
-                echo ""
-                echo "Workspace Files:"
                 ls -la
                 '''
             }
@@ -39,7 +37,6 @@ pipeline {
         stage('Python Version') {
             steps {
                 sh '''
-                echo "========== PYTHON VERSION =========="
                 python3 --version
                 pip3 --version
                 '''
@@ -50,8 +47,6 @@ pipeline {
             steps {
                 dir('backend') {
                     sh '''
-                    echo "========== CREATE VENV =========="
-
                     python3 -m venv venv
 
                     . venv/bin/activate
@@ -66,8 +61,6 @@ pipeline {
             steps {
                 dir('backend') {
                     sh '''
-                    echo "========== INSTALL DEPENDENCIES =========="
-
                     . venv/bin/activate
 
                     pip install -r requirements.txt
@@ -80,8 +73,6 @@ pipeline {
             steps {
                 dir('backend') {
                     sh '''
-                    echo "========== VERIFY PACKAGES =========="
-
                     . venv/bin/activate
 
                     pip list
@@ -91,22 +82,28 @@ pipeline {
         }
 
         stage('Build Docker Image') {
-            steps {
-                dir('backend') {
-                    sh '''
-                    echo "========== BUILD DOCKER IMAGE =========="
 
+            steps {
+
+                dir('backend') {
+
+                    sh """
                     docker build \
                     -t ${IMAGE_NAME}:${BUILD_TAG} \
                     -t ${IMAGE_NAME}:latest \
                     .
-                    '''
+                    """
+
                 }
+
             }
+
         }
 
         stage('Docker Login') {
+
             steps {
+
                 withCredentials([
                     usernamePassword(
                         credentialsId: 'dockerhub-creds',
@@ -116,53 +113,49 @@ pipeline {
                 ]) {
 
                     sh '''
-                    echo "========== DOCKER LOGIN =========="
-
                     echo "$DOCKER_PASS" | docker login \
                     -u "$DOCKER_USER" \
                     --password-stdin
                     '''
+
                 }
+
             }
+
         }
 
         stage('Push Docker Image') {
+
             steps {
-                sh '''
-                echo "========== PUSH IMAGE =========="
 
+                sh """
                 docker push ${IMAGE_NAME}:${BUILD_TAG}
-
                 docker push ${IMAGE_NAME}:latest
-                '''
+                """
+
             }
+
         }
 
         stage('Deploy to EC2') {
+
             steps {
 
                 sshagent(credentials: ['ec2-ssh-key']) {
 
-                    withCredentials([
-                        string(
-                            credentialsId: 'deployment-ip',
-                            variable: 'DEPLOY_HOST'
-                        )
-                    ]) {
+                    sh '''
+                    chmod +x /var/lib/jenkins/scripts/deploy.sh
+                    /var/lib/jenkins/scripts/deploy.sh
+                    '''
 
-                        sh '''
-                        echo "========== DEPLOY TO EC2 =========="
-
-                        chmod +x /var/lib/jenkins/scripts/deploy.sh
-
-                        /var/lib/jenkins/scripts/deploy.sh
-                        '''
-                    }
                 }
+
             }
+
         }
 
         stage('Health Check') {
+
             steps {
 
                 withCredentials([
@@ -173,40 +166,43 @@ pipeline {
                 ]) {
 
                     sh '''
-                    echo "========== HEALTH CHECK =========="
+                    echo "Waiting for Application..."
 
                     sleep 20
 
                     curl --fail http://$DEPLOY_HOST:5000/health
                     '''
+
                 }
+
             }
+
         }
+
     }
 
     post {
 
         success {
-            echo "======================================="
-            echo "PIPELINE COMPLETED SUCCESSFULLY"
-            echo "======================================="
+
+            echo "Pipeline Completed Successfully"
+
         }
 
         failure {
-            echo "======================================="
-            echo "PIPELINE FAILED"
-            echo "======================================="
+
+            echo "Pipeline Failed"
+
         }
 
         always {
 
-            echo "========== CLEANUP =========="
-
             cleanWs()
 
-            sh '''
-            docker image prune -af || true
-            '''
+            sh 'docker image prune -af || true'
+
         }
+
     }
+
 }

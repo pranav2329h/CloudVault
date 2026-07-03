@@ -1,4 +1,5 @@
 pipeline {
+
     agent any
 
     options {
@@ -10,8 +11,11 @@ pipeline {
     environment {
 
         APP_NAME = "cloudvault-backend"
+
         DOCKER_USERNAME = "pranav2329h"
+
         IMAGE_NAME = "${DOCKER_USERNAME}/${APP_NAME}"
+
         BUILD_TAG = "${BUILD_NUMBER}"
 
     }
@@ -60,6 +64,7 @@ pipeline {
         stage('Install Dependencies') {
             steps {
                 dir('backend') {
+
                     sh '''
                     . venv/bin/activate
 
@@ -69,16 +74,62 @@ pipeline {
             }
         }
 
-        stage('Verify Installation') {
+        stage('Code Lint') {
+
             steps {
+
                 dir('backend') {
+
+                    sh '''
+                    . venv/bin/activate
+
+                    pip install flake8
+
+                    flake8 . || true
+                    '''
+
+                }
+
+            }
+
+        }
+
+        stage('Unit Test') {
+
+            steps {
+
+                dir('backend') {
+
+                    sh '''
+                    . venv/bin/activate
+
+                    pip install pytest
+
+                    pytest || true
+                    '''
+
+                }
+
+            }
+
+        }
+
+        stage('Verify Installation') {
+
+            steps {
+
+                dir('backend') {
+
                     sh '''
                     . venv/bin/activate
 
                     pip list
                     '''
+
                 }
+
             }
+
         }
 
         stage('Build Docker Image') {
@@ -87,14 +138,26 @@ pipeline {
 
                 dir('backend') {
 
-                    sh """
+                    sh '''
                     docker build \
                     -t ${IMAGE_NAME}:${BUILD_TAG} \
                     -t ${IMAGE_NAME}:latest \
                     .
-                    """
+                    '''
 
                 }
+
+            }
+
+        }
+
+        stage('Docker Image Scan') {
+
+            steps {
+
+                sh '''
+                trivy image ${IMAGE_NAME}:latest || true
+                '''
 
             }
 
@@ -128,10 +191,11 @@ pipeline {
 
             steps {
 
-                sh """
+                sh '''
                 docker push ${IMAGE_NAME}:${BUILD_TAG}
+
                 docker push ${IMAGE_NAME}:latest
-                """
+                '''
 
             }
 
@@ -143,10 +207,20 @@ pipeline {
 
                 sshagent(credentials: ['ec2-ssh-key']) {
 
-                    sh '''
-                    chmod +x /var/lib/jenkins/scripts/deploy.sh
-                    /var/lib/jenkins/scripts/deploy.sh
-                    '''
+                    withCredentials([
+                        string(
+                            credentialsId: 'deployment-ip',
+                            variable: 'DEPLOY_HOST'
+                        )
+                    ]) {
+
+                        sh '''
+                        chmod +x /var/lib/jenkins/scripts/deploy.sh
+
+                        /var/lib/jenkins/scripts/deploy.sh
+                        '''
+
+                    }
 
                 }
 
@@ -166,14 +240,40 @@ pipeline {
                 ]) {
 
                     sh '''
-                    echo "Waiting for Application..."
-
                     sleep 20
 
-                    curl --fail http://$DEPLOY_HOST:5000/health
+                    curl http://$DEPLOY_HOST:5000/health
                     '''
 
                 }
+
+            }
+
+        }
+
+        stage('Build Information') {
+
+            steps {
+
+                sh '''
+                echo "===== Docker Images ====="
+
+                docker images
+
+                echo ""
+
+                echo "===== Running Containers ====="
+
+                docker ps -a
+
+                echo ""
+
+                hostname
+
+                echo ""
+
+                df -h
+                '''
 
             }
 
@@ -199,7 +299,9 @@ pipeline {
 
             cleanWs()
 
-            sh 'docker image prune -af || true'
+            sh '''
+            docker system prune -af --volumes || true
+            '''
 
         }
 

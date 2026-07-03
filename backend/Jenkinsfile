@@ -1,4 +1,5 @@
 pipeline {
+
     agent any
 
     options {
@@ -9,13 +10,13 @@ pipeline {
 
     environment {
 
-     APP_NAME = "cloudvault-backend"
+        APP_NAME = "cloudvault-backend"
 
-     DOCKER_USERNAME = "pranav2329h"
+        DOCKER_USERNAME = "pranav2329h"
 
-     IMAGE_NAME = "${DOCKER_USERNAME}/${APP_NAME}"
+        IMAGE_NAME = "${DOCKER_USERNAME}/${APP_NAME}"
 
-     BUILD_TAG = "${BUILD_NUMBER}"
+        BUILD_TAG = "${BUILD_NUMBER}"
 
     }
 
@@ -31,11 +32,7 @@ pipeline {
         stage('Workspace Info') {
             steps {
                 sh '''
-                echo "Current Directory:"
                 pwd
-
-                echo ""
-                echo "Workspace Files:"
                 ls -la
                 '''
             }
@@ -67,6 +64,7 @@ pipeline {
         stage('Install Dependencies') {
             steps {
                 dir('backend') {
+
                     sh '''
                     . venv/bin/activate
 
@@ -76,129 +74,237 @@ pipeline {
             }
         }
 
-        stage('Verify Installation') {
+        stage('Code Lint') {
+
             steps {
+
                 dir('backend') {
+
+                    sh '''
+                    . venv/bin/activate
+
+                    pip install flake8
+
+                    flake8 . || true
+                    '''
+
+                }
+
+            }
+
+        }
+
+        stage('Unit Test') {
+
+            steps {
+
+                dir('backend') {
+
+                    sh '''
+                    . venv/bin/activate
+
+                    pip install pytest
+
+                    pytest || true
+                    '''
+
+                }
+
+            }
+
+        }
+
+        stage('Verify Installation') {
+
+            steps {
+
+                dir('backend') {
+
                     sh '''
                     . venv/bin/activate
 
                     pip list
                     '''
+
                 }
+
             }
-        }
-    stage('Build Docker Image') {
-
-     steps
-         {
-
-            dir('backend') {
-
-            sh '''
-            docker build \
-            -t ${IMAGE_NAME}:${BUILD_TAG} \
-            -t ${IMAGE_NAME}:latest \
-            .
-            '''
-          }
-
-         }
-
-        }
-        stage('Docker Login') {
-
-    steps {
-
-        withCredentials([usernamePassword(
-            credentialsId: 'dockerhub-creds',
-            usernameVariable: 'DOCKER_USER',
-            passwordVariable: 'DOCKER_PASS'
-        )]) {
-
-            sh '''
-            echo "$DOCKER_PASS" | docker login \
-            -u "$DOCKER_USER" \
-            --password-stdin
-            '''
 
         }
 
-    }
+        stage('Build Docker Image') {
 
-}
-stage('Push Docker Image') {
+            steps {
 
-    steps {
+                dir('backend') {
 
-        sh '''
-        docker push ${IMAGE_NAME}:${BUILD_TAG}
+                    sh '''
+                    docker build \
+                    -t ${IMAGE_NAME}:${BUILD_TAG} \
+                    -t ${IMAGE_NAME}:latest \
+                    .
+                    '''
 
-        docker push ${IMAGE_NAME}:latest
-        '''
+                }
 
-    }
+            }
 
-}
-stage('Deploy to EC2') {
+        }
 
-    steps {
+        stage('Docker Image Scan') {
 
-        sshagent(credentials: ['ec2-ssh-key']) {
-
-            withCredentials([
-                string(
-                    credentialsId: 'deployment-ip',
-                    variable: 'DEPLOY_HOST'
-                )
-            ]) {
+            steps {
 
                 sh '''
-                chmod +x /var/lib/jenkins/scripts/deploy.sh
-
-                /var/lib/jenkins/scripts/deploy.sh
+                trivy image ${IMAGE_NAME}:latest || true
                 '''
+
             }
+
         }
-    }
-}
-stage('Health Check') {
 
-    steps {
+        stage('Docker Login') {
 
-        withCredentials([
-            string(
-                credentialsId: 'deployment-ip',
-                variable: 'DEPLOY_HOST'
-            )
-        ]) {
+            steps {
 
-            sh '''
-            sleep 15
+                withCredentials([
+                    usernamePassword(
+                        credentialsId: 'dockerhub-creds',
+                        usernameVariable: 'DOCKER_USER',
+                        passwordVariable: 'DOCKER_PASS'
+                    )
+                ]) {
 
-            curl http://$DEPLOY_HOST:5000/health
-            '''
+                    sh '''
+                    echo "$DOCKER_PASS" | docker login \
+                    -u "$DOCKER_USER" \
+                    --password-stdin
+                    '''
+
+                }
+
+            }
+
         }
-    }
-}
+
+        stage('Push Docker Image') {
+
+            steps {
+
+                sh '''
+                docker push ${IMAGE_NAME}:${BUILD_TAG}
+
+                docker push ${IMAGE_NAME}:latest
+                '''
+
+            }
+
+        }
+
+        stage('Deploy to EC2') {
+
+            steps {
+
+                sshagent(credentials: ['ec2-ssh-key']) {
+
+                    withCredentials([
+                        string(
+                            credentialsId: 'deployment-ip',
+                            variable: 'DEPLOY_HOST'
+                        )
+                    ]) {
+
+                        sh '''
+                        chmod +x /var/lib/jenkins/scripts/deploy.sh
+
+                        /var/lib/jenkins/scripts/deploy.sh
+                        '''
+
+                    }
+
+                }
+
+            }
+
+        }
+
+        stage('Health Check') {
+
+            steps {
+
+                withCredentials([
+                    string(
+                        credentialsId: 'deployment-ip',
+                        variable: 'DEPLOY_HOST'
+                    )
+                ]) {
+
+                    sh '''
+                    sleep 20
+
+                    curl http://$DEPLOY_HOST:5000/health
+                    '''
+
+                }
+
+            }
+
+        }
+
+        stage('Build Information') {
+
+            steps {
+
+                sh '''
+                echo "===== Docker Images ====="
+
+                docker images
+
+                echo ""
+
+                echo "===== Running Containers ====="
+
+                docker ps -a
+
+                echo ""
+
+                hostname
+
+                echo ""
+
+                df -h
+                '''
+
+            }
+
+        }
 
     }
 
     post {
 
-    success {
-        echo "Pipeline Completed Successfully"
+        success {
+
+            echo "Pipeline Completed Successfully"
+
+        }
+
+        failure {
+
+            echo "Pipeline Failed"
+
+        }
+
+        always {
+
+            cleanWs()
+
+            sh '''
+            docker system prune -af --volumes || true
+            '''
+
+        }
+
     }
 
-    failure {
-        echo "Pipeline Failed"
-    }
-
-    always {
-
-        cleanWs()
-
-        sh 'docker image prune -af || true'
-
-    }
-}
 }

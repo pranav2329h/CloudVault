@@ -92,22 +92,30 @@ pipeline {
         }
 
         stage('SonarQube Analysis') {
-            steps {
-                dir('backend') {
-                    withSonarQubeEnv('SonarQube') {
 
-                        sh '''
-                        ${SONAR_SCANNER_HOME}/bin/sonar-scanner \
+    steps {
+
+        dir('backend') {
+
+            script {
+
+                def scannerHome = tool 'SonarScanner'
+
+                withSonarQubeEnv('SonarQube') {
+
+                    sh """
+                        ${scannerHome}/bin/sonar-scanner \
                         -Dsonar.projectKey=CloudVault \
                         -Dsonar.projectName=CloudVault \
                         -Dsonar.sources=. \
                         -Dsonar.python.version=3 \
                         -Dsonar.sourceEncoding=UTF-8
-                        '''
-                    }
+                    """
                 }
             }
         }
+    }
+}
 
         stage('Quality Gate') {
             steps {

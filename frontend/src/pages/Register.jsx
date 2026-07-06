@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { FiUser, FiMail, FiLock, FiEye, FiEyeOff, FiArrowRight, FiCheckCircle } from 'react-icons/fi';
+import { FiUser, FiMail, FiLock, FiEye, FiEyeOff, FiArrowRight } from 'react-icons/fi';
 import { useAuth } from '../hooks/useAuth';
 import Button from '../components/common/Button';
 import toast from 'react-hot-toast';
@@ -121,7 +121,7 @@ export const Register = () => {
                 required: 'Password is required',
                 minLength: { value: 6, message: 'Must be at least 6 characters' }
               })}
-              placeholder="••••••••"
+              placeholder="********"
               className={`w-full pl-10 pr-10 py-2.5 bg-slate-900/60 border ${
                 errors.password ? 'border-rose-500' : 'border-slate-600 focus:border-blue-500'
               } rounded-xl text-sm text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all`}
@@ -150,7 +150,7 @@ export const Register = () => {
                 required: 'Please confirm your password',
                 validate: (val) => val === passwordVal || 'Passwords do not match'
               })}
-              placeholder="••••••••"
+              placeholder="********"
               className={`w-full pl-10 pr-4 py-2.5 bg-slate-900/60 border ${
                 errors.confirmPassword ? 'border-rose-500' : 'border-slate-600 focus:border-blue-500'
               } rounded-xl text-sm text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all`}

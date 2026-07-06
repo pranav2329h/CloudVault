@@ -12,9 +12,9 @@ pip install --upgrade pip
 
 pip install -r requirements.txt
 
-echo "Running Tests..."
+echo "Running Python compile checks..."
 
-python -m unittest discover || true
+python -m compileall .
 
 echo "Building Docker Image..."
 

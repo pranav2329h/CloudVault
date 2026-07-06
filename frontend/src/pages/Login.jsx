@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { FiMail, FiLock, FiEye, FiEyeOff, FiArrowRight, FiCheck } from 'react-icons/fi';
+import { FiMail, FiLock, FiEye, FiEyeOff, FiArrowRight } from 'react-icons/fi';
 import { useAuth } from '../hooks/useAuth';
 import Button from '../components/common/Button';
 import toast from 'react-hot-toast';
@@ -22,8 +22,8 @@ export const Login = () => {
     formState: { errors }
   } = useForm({
     defaultValues: {
-      email: 'alex.morgan@example.com',
-      password: 'password123',
+      email: '',
+      password: '',
       rememberMe: true
     }
   });
@@ -103,7 +103,7 @@ export const Login = () => {
                 required: 'Password is required',
                 minLength: { value: 6, message: 'Must be at least 6 characters' }
               })}
-              placeholder="••••••••"
+              placeholder="********"
               className={`w-full pl-10 pr-10 py-3 bg-slate-900/60 border ${
                 errors.password ? 'border-rose-500' : 'border-slate-600 focus:border-blue-500'
               } rounded-xl text-sm text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all`}
@@ -149,14 +149,6 @@ export const Login = () => {
           </Button>
         </div>
       </form>
-
-      {/* Demo Credentials Tip Box */}
-      <div className="mt-6 p-3.5 rounded-xl bg-slate-900/40 border border-slate-700/60 text-xs text-slate-300 flex items-start gap-2.5">
-        <FiCheck className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-        <div>
-          <span className="font-semibold text-white">Demo Mode Ready:</span> Click "Sign In" directly with default credentials to test the full SaaS interface!
-        </div>
-      </div>
 
       {/* Footer Switcher */}
       <p className="mt-6 text-center text-xs sm:text-sm text-slate-400">

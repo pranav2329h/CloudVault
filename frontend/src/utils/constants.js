@@ -1,10 +1,7 @@
-import { 
-  FiGrid, FiFolder, FiUploadCloud, FiUser, 
-  FiFileText, FiImage, FiVideo, FiMusic, FiArchive, FiFile, FiCode 
-} from 'react-icons/fi';
+import { FiGrid, FiFolder, FiUploadCloud, FiUser } from 'react-icons/fi';
 
 export const APP_NAME = import.meta.env.VITE_APP_NAME || 'CloudVault';
-export const API_BASE_URL =import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 export const DEFAULT_STORAGE_LIMIT_BYTES = 15 * 1024 * 1024 * 1024; // 15 GB default
 
 export const NAV_ITEMS = [

@@ -7,12 +7,25 @@ from config.config import Config
 
 logger = logging.getLogger(__name__)
 
-s3_client = boto3.client(
-    service_name="s3",
-    aws_access_key_id=Config.AWS_ACCESS_KEY_ID,
-    aws_secret_access_key=Config.AWS_SECRET_ACCESS_KEY,
-    region_name=Config.AWS_REGION,
-)
+_s3_client = None
+
+
+def get_s3_client():
+    global _s3_client
+
+    if _s3_client is None:
+        kwargs = {
+            "service_name": "s3",
+            "region_name": Config.AWS_REGION,
+        }
+
+        if Config.AWS_ACCESS_KEY_ID and Config.AWS_SECRET_ACCESS_KEY:
+            kwargs["aws_access_key_id"] = Config.AWS_ACCESS_KEY_ID
+            kwargs["aws_secret_access_key"] = Config.AWS_SECRET_ACCESS_KEY
+
+        _s3_client = boto3.client(**kwargs)
+
+    return _s3_client
 
 
 def upload_to_s3(file, object_key):
@@ -22,7 +35,7 @@ def upload_to_s3(file, object_key):
     """
 
     try:
-        s3_client.upload_fileobj(
+        get_s3_client().upload_fileobj(
             Fileobj=file,
             Bucket=Config.AWS_BUCKET_NAME,
             Key=object_key,
@@ -47,7 +60,7 @@ def delete_from_s3(object_key):
     """
 
     try:
-        s3_client.delete_object(
+        get_s3_client().delete_object(
             Bucket=Config.AWS_BUCKET_NAME,
             Key=object_key,
         )
@@ -71,7 +84,7 @@ def download_from_s3(object_key):
     """
 
     try:
-        response = s3_client.get_object(
+        response = get_s3_client().get_object(
             Bucket=Config.AWS_BUCKET_NAME,
             Key=object_key,
         )
@@ -94,7 +107,7 @@ def generate_download_url(object_key, expiration=300):
     """
 
     try:
-        url = s3_client.generate_presigned_url(
+        url = get_s3_client().generate_presigned_url(
             ClientMethod="get_object",
             Params={
                 "Bucket": Config.AWS_BUCKET_NAME,
@@ -121,7 +134,7 @@ def object_exists(object_key):
     """
 
     try:
-        s3_client.head_object(
+        get_s3_client().head_object(
             Bucket=Config.AWS_BUCKET_NAME,
             Key=object_key,
         )
@@ -138,7 +151,7 @@ def get_file_metadata(object_key):
     """
 
     try:
-        response = s3_client.head_object(
+        response = get_s3_client().head_object(
             Bucket=Config.AWS_BUCKET_NAME,
             Key=object_key,
         )

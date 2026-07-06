@@ -1,9 +1,11 @@
 import axios from 'axios';
 import { API_BASE_URL, STORAGE_KEYS } from '../utils/constants';
 
+const normalizedBaseUrl = API_BASE_URL.replace(/\/+$/, '');
+
 // Create a reusable Axios instance
 const api = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: normalizedBaseUrl,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -16,6 +18,9 @@ api.interceptors.request.use(
     const token = localStorage.getItem(STORAGE_KEYS.TOKEN);
     if (token) {
       config.headers['Authorization'] = `Bearer ${token}`;
+    }
+    if (config.data instanceof FormData) {
+      delete config.headers['Content-Type'];
     }
     return config;
   },
@@ -31,7 +36,7 @@ api.interceptors.response.use(
   },
   (error) => {
     // If the server responds with 401 Unauthorized, token is expired or invalid
-    if (error.response && error.response.status === 401) {
+    if (error.response && [401, 422].includes(error.response.status)) {
       // Check if we are not already on the login page
       if (!window.location.pathname.startsWith('/login') && !window.location.pathname.startsWith('/register')) {
         localStorage.removeItem(STORAGE_KEYS.TOKEN);

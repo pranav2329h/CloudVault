@@ -4,6 +4,6 @@ set -e
 
 echo "Checking Backend Health..."
 
-curl http://$EC2_HOST:5000/
+curl --fail --show-error --silent http://$EC2_HOST:5000/health
 
 echo "Application is running."

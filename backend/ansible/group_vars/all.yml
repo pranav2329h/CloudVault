@@ -2,4 +2,14 @@ github_repo: "https://github.com/pranav2329h/CloudVault.git"
 
 project_path: "/home/ubuntu/CloudVault"
 
-docker_image: "pranav2329h/cloudvault-backend:v1"
+docker_image: "pranav2329h/cloudvault-backend:latest"
+
+app_domain: "https://cloudvault-pranav.duckdns.org"
+
+mongodb_username: "admin"
+
+mongodb_password: "password"
+
+database_name: "cloudvault"
+
+storage_backend: "s3"

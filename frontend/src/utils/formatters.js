@@ -38,7 +38,7 @@ export const formatDate = (dateString) => {
       day: 'numeric',
       year: 'numeric'
     }).format(date);
-  } catch (error) {
+  } catch {
     return 'N/A';
   }
 };
@@ -61,7 +61,7 @@ export const formatDateTime = (dateString) => {
       hour: '2-digit',
       minute: '2-digit'
     }).format(date);
-  } catch (error) {
+  } catch {
     return 'N/A';
   }
 };

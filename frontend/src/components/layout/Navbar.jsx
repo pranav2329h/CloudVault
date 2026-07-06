@@ -136,10 +136,10 @@ export const Navbar = ({ onToggleSidebar }) => {
             />
             <div className="hidden md:flex flex-col text-left mr-1">
               <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 leading-tight max-w-[100px] truncate">
-                {user?.name || 'Alex Morgan'}
+                {user?.name || 'User'}
               </span>
               <span className="text-[10px] text-slate-500 dark:text-slate-400">
-                {user?.role || 'Pro Member'}
+                {user?.role || 'user'}
               </span>
             </div>
           </button>
@@ -147,7 +147,7 @@ export const Navbar = ({ onToggleSidebar }) => {
           {showProfileMenu && (
             <div className="absolute right-0 mt-2 w-56 rounded-2xl bg-white dark:bg-slate-800 shadow-xl border border-slate-200 dark:border-slate-700 py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
               <div className="px-4 py-2.5 border-b border-slate-100 dark:border-slate-700 md:hidden">
-                <p className="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate">{user?.name || 'Alex Morgan'}</p>
+                <p className="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate">{user?.name || 'User'}</p>
                 <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">{user?.email}</p>
               </div>
               <Link
@@ -158,7 +158,7 @@ export const Navbar = ({ onToggleSidebar }) => {
                 <FiUser className="w-4 h-4 text-slate-400" /> My Profile
               </Link>
               <Link
-                to="/profile?tab=settings"
+                to="/profile?tab=security"
                 onClick={() => setShowProfileMenu(false)}
                 className="flex items-center gap-2.5 px-4 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/60 transition-colors"
               >

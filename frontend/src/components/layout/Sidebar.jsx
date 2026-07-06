@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, Link } from 'react-router-dom';
 import { FiCloud, FiX, FiHardDrive, FiArrowUpRight } from 'react-icons/fi';
-import { NAV_ITEMS, APP_NAME } from '../../utils/constants';
+import { NAV_ITEMS, APP_NAME, DEFAULT_STORAGE_LIMIT_BYTES } from '../../utils/constants';
 import storageService from '../../services/storageService';
 import { formatFileSize } from '../../utils/formatters';
 
 export const Sidebar = ({ isOpen, onClose }) => {
   const [storage, setStorage] = useState({
-    usedBytes: 8 * 1024 * 1024 * 1024,
-    totalBytes: 15 * 1024 * 1024 * 1024,
-    percentage: 56.7
+    usedBytes: 0,
+    totalBytes: DEFAULT_STORAGE_LIMIT_BYTES,
+    percentage: 0
   });
 
   useEffect(() => {
@@ -19,12 +19,12 @@ export const Sidebar = ({ isOpen, onClose }) => {
         if (data) {
           setStorage({
             usedBytes: data.usedBytes || 0,
-            totalBytes: data.totalBytes || 15 * 1024 * 1024 * 1024,
+            totalBytes: data.totalBytes || DEFAULT_STORAGE_LIMIT_BYTES,
             percentage: data.percentage || 0
           });
         }
       } catch (err) {
-        console.error('Failed to load storage info in sidebar:', err);
+        // Silently ignore storage fetch error
       }
     };
     fetchStorage();

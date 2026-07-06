@@ -5,6 +5,7 @@ import { FiFolder, FiHardDrive, FiPieChart, FiUploadCloud, FiArrowRight, FiShiel
 import { useAuth } from '../hooks/useAuth';
 import { useFiles } from '../hooks/useFiles';
 import storageService from '../services/storageService';
+import { DEFAULT_STORAGE_LIMIT_BYTES } from '../utils/constants';
 import StorageCard from '../components/dashboard/StorageCard';
 import StoragePieChart from '../components/charts/StoragePieChart';
 import RecentUploads from '../components/dashboard/RecentUploads';
@@ -14,11 +15,11 @@ export const Dashboard = () => {
   const { user } = useAuth();
   const { files, loading: filesLoading, downloadFile, deleteFile } = useFiles({ limit: 6 });
   const [storageData, setStorageData] = useState({
-    totalBytes: 15 * 1024 * 1024 * 1024,
-    usedBytes: 8.45 * 1024 * 1024 * 1024,
-    remainingBytes: 6.55 * 1024 * 1024 * 1024,
-    percentage: 56.3,
-    totalFiles: 142,
+    totalBytes: DEFAULT_STORAGE_LIMIT_BYTES,
+    usedBytes: 0,
+    remainingBytes: DEFAULT_STORAGE_LIMIT_BYTES,
+    percentage: 0,
+    totalFiles: 0,
     categories: {}
   });
   const [metricsLoading, setMetricsLoading] = useState(true);
@@ -31,7 +32,7 @@ export const Dashboard = () => {
           setStorageData(data);
         }
       } catch (err) {
-        console.error('Failed to load storage metrics:', err);
+        // Silently handle error or show notification
       } finally {
         setMetricsLoading(false);
       }
@@ -54,7 +55,7 @@ export const Dashboard = () => {
             <FiShield className="w-3.5 h-3.5" /> AWS S3 Protected Workspace
           </span>
           <h1 className="text-2xl sm:text-3xl md:text-4xl font-black tracking-tight">
-            Welcome back, {user?.name?.split(' ')[0] || 'Alex'}!
+            Welcome back, {user?.name?.split(' ')[0] || 'User'}!
           </h1>
           <p className="mt-1 text-sm sm:text-base text-blue-100 max-w-xl">
             You are currently using <span className="font-bold text-white">{storageData.percentage}%</span> of your cloud storage. Everything is encrypted and synced across all your devices.
@@ -76,7 +77,7 @@ export const Dashboard = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <StorageCard
           title="Total Files"
-          value={metricsLoading ? '...' : (storageData.totalFiles || files.length || 142)}
+          value={metricsLoading ? '...' : (storageData.totalFiles || files.length || 0)}
           subtitle="Documents, media & archives"
           icon={FiFolder}
           colorScheme="blue"

@@ -9,7 +9,6 @@ import Button from '../components/common/Button';
 import Card from '../components/common/Card';
 import Badge from '../components/common/Badge';
 import toast from 'react-hot-toast';
-import { formatFileSize } from '../utils/formatters';
 
 export const Profile = () => {
   const { user, updateUserData, logout } = useAuth();
@@ -26,8 +25,8 @@ export const Profile = () => {
     formState: { errors: profileErrors }
   } = useForm({
     defaultValues: {
-      name: user?.name || 'Alex Morgan',
-      email: user?.email || 'alex.morgan@example.com',
+      name: user?.name || '',
+      email: user?.email || '',
       avatar: user?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=250&q=80'
     }
   });
@@ -105,8 +104,8 @@ export const Profile = () => {
           />
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <h1 className="text-2xl font-extrabold tracking-tight">{user?.name || 'Alex Morgan'}</h1>
-              <Badge variant="primary" size="sm">{user?.role || 'Pro Member'}</Badge>
+              <h1 className="text-2xl font-extrabold tracking-tight">{user?.name || 'User'}</h1>
+              <Badge variant="primary" size="sm">{user?.role || 'user'}</Badge>
             </div>
             <p className="text-sm text-slate-300 flex items-center gap-1.5">
               <FiMail className="w-3.5 h-3.5 text-blue-400" /> {user?.email}
@@ -253,7 +252,7 @@ export const Profile = () => {
                   <input
                     type="password"
                     {...regPassword('currentPassword', { required: 'Current password is required' })}
-                    placeholder="••••••••"
+                    placeholder="********"
                     className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
                   />
                   {passErrors.currentPassword && (
@@ -271,7 +270,7 @@ export const Profile = () => {
                       required: 'New password is required',
                       minLength: { value: 6, message: 'Password must be at least 6 characters' }
                     })}
-                    placeholder="••••••••"
+                    placeholder="********"
                     className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
                   />
                   {passErrors.newPassword && (
@@ -289,7 +288,7 @@ export const Profile = () => {
                       required: 'Please confirm your new password',
                       validate: (val) => val === newPassVal || 'Passwords do not match'
                     })}
-                    placeholder="••••••••"
+                    placeholder="********"
                     className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
                   />
                   {passErrors.confirmNewPassword && (

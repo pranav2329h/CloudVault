@@ -1,27 +1,27 @@
 #!/bin/bash
 
-set -e
+set -euo pipefail
 
-echo "Logging into Docker Hub..."
+: "${DOCKER_USERNAME:?DOCKER_USERNAME is required}"
+: "${EC2_HOST:?EC2_HOST is required}"
 
-docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
+IMAGE_NAME="${DOCKER_USERNAME}/cloudvault-backend:latest"
 
-echo "Tagging Image..."
+if [[ -n "${DOCKER_PASSWORD:-}" ]]; then
+  echo "Logging into Docker Hub..."
+  echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+fi
 
-docker tag cloudvault-backend:latest $DOCKER_USERNAME/cloudvault-backend:latest
+echo "Tagging image..."
+docker tag cloudvault-backend:latest "$IMAGE_NAME"
 
-echo "Pushing Image..."
+echo "Pushing image..."
+docker push "$IMAGE_NAME"
 
-docker push $DOCKER_USERNAME/cloudvault-backend:latest
-
-echo "Connecting to Deployment Server..."
-
-ssh -o StrictHostKeyChecking=no ubuntu@$EC2_HOST << EOF
-
+echo "Deploying CloudVault on EC2..."
+ssh -o StrictHostKeyChecking=no "ubuntu@$EC2_HOST" << EOF
+set -euo pipefail
 cd CloudVault/backend
-
-docker compose pull
-
-docker compose up -d
-
+BACKEND_IMAGE="$IMAGE_NAME" docker compose pull
+BACKEND_IMAGE="$IMAGE_NAME" docker compose up -d --no-build --remove-orphans
 EOF

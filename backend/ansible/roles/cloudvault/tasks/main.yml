@@ -6,14 +6,49 @@
     version: main
     force: yes
 
-- name: Pull Docker Image
-  command: docker pull {{ docker_image }}
+- name: Create backend environment file
+  copy:
+    dest: "{{ project_path }}/backend/.env"
+    mode: "0600"
+    content: |
+      PORT=5000
+      MONGO_INITDB_ROOT_USERNAME={{ mongodb_username }}
+      MONGO_INITDB_ROOT_PASSWORD={{ mongodb_password }}
+      MONGO_URI=mongodb://{{ mongodb_username }}:{{ mongodb_password }}@mongodb:27017/?authSource=admin
+      DATABASE_NAME={{ database_name }}
+      SECRET_KEY={{ lookup('env', 'CLOUDVAULT_SECRET_KEY') | default('change-this-secret-key', true) }}
+      JWT_SECRET_KEY={{ lookup('env', 'CLOUDVAULT_JWT_SECRET_KEY') | default('change-this-jwt-secret-key', true) }}
+      CORS_ORIGINS=http://localhost:5173,http://localhost:3000,{{ app_domain }}
+      STORAGE_BACKEND={{ storage_backend }}
+      AWS_REGION={{ lookup('env', 'AWS_REGION') | default('eu-north-1', true) }}
+      AWS_BUCKET_NAME={{ lookup('env', 'CLOUDVAULT_AWS_BUCKET_NAME') | default('', true) }}
+      AWS_ACCESS_KEY_ID={{ lookup('env', 'CLOUDVAULT_AWS_ACCESS_KEY_ID') | default('', true) }}
+      AWS_SECRET_ACCESS_KEY={{ lookup('env', 'CLOUDVAULT_AWS_SECRET_ACCESS_KEY') | default('', true) }}
+      PRESIGNED_URL_EXPIRY=300
+      MAX_FILE_SIZE=104857600
+      BACKEND_IMAGE={{ docker_image }}
+  no_log: true
 
-- name: Start Backend Container
-  command: >
-    docker run -d
-    --name cloudvault-backend
-    -p 5000:5000
-    --restart always
-    {{ docker_image }}
+- name: Pull Docker images
+  command: docker compose pull
+  args:
+    chdir: "{{ project_path }}/backend"
+
+- name: Remove old standalone backend container if present
+  command: docker rm -f cloudvault-backend
   ignore_errors: yes
+
+- name: Start CloudVault stack
+  command: docker compose up -d --no-build --remove-orphans
+  args:
+    chdir: "{{ project_path }}/backend"
+
+- name: Wait for backend health endpoint
+  uri:
+    url: "http://127.0.0.1:5000/health"
+    method: GET
+    status_code: 200
+  register: health_result
+  retries: 12
+  delay: 5
+  until: health_result.status == 200

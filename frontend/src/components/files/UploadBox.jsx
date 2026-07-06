@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { FiUploadCloud, FiFile, FiX, FiCheckCircle, FiAlertCircle, FiArrowUp } from 'react-icons/fi';
+import { FiUploadCloud, FiX, FiCheckCircle, FiAlertCircle, FiArrowUp } from 'react-icons/fi';
 import Button from '../common/Button';
 import { formatFileSize, getFileIconProps } from '../../utils/formatters';
 
@@ -74,7 +74,7 @@ export const UploadBox = ({ onUpload, className = '' }) => {
         setSelectedFiles(prev =>
           prev.map(item => item.id === current.id ? { ...item, status: 'success', progress: 100 } : item)
         );
-      } catch (error) {
+      } catch {
         setSelectedFiles(prev =>
           prev.map(item => item.id === current.id ? { ...item, status: 'error' } : item)
         );

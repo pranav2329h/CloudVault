@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Modal from '../common/Modal';
 import Button from '../common/Button';
-import { FiCheck, FiX } from 'react-icons/fi';
+import { FiCheck } from 'react-icons/fi';
 
 export const RenameModal = ({ isOpen, onClose, file, onRename }) => {
   const [newName, setNewName] = useState('');

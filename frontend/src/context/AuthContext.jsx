@@ -1,8 +1,7 @@
-import React, { createContext, useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import authService from '../services/authService';
 import { STORAGE_KEYS } from '../utils/constants';
-
-export const AuthContext = createContext(null);
+import { AuthContext } from './auth-context';
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(() => authService.getCurrentUser());
@@ -18,18 +17,14 @@ export const AuthProvider = ({ children }) => {
     }
 
     try {
-      // Try to verify token or get current user
-      const currentUser = authService.getCurrentUser();
-      if (currentUser) {
-        setUser(currentUser);
+      const verified = await authService.verifyToken();
+      if (verified?.valid && verified.user) {
+        setUser(verified.user);
       } else {
-        const verified = await authService.verifyToken();
-        if (verified && verified.user) {
-          setUser(verified.user);
-        }
+        authService.logout();
+        setUser(null);
       }
     } catch (err) {
-      console.error('Auth initialization failed:', err);
       authService.logout();
       setUser(null);
     } finally {
@@ -57,6 +52,9 @@ export const AuthProvider = ({ children }) => {
     setError(null);
     try {
       const data = await authService.login(credentials);
+      if (!data?.token || !data?.user) {
+        throw new Error('Login response did not include a token and user.');
+      }
       setUser(data.user);
       return data;
     } catch (err) {
@@ -73,6 +71,9 @@ export const AuthProvider = ({ children }) => {
     setError(null);
     try {
       const data = await authService.register(userData);
+      if (!data?.token || !data?.user) {
+        throw new Error('Registration response did not include a token and user.');
+      }
       setUser(data.user);
       return data;
     } catch (err) {

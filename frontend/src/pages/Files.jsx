@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { FiFolder, FiChevronLeft, FiChevronRight } from 'react-icons/fi';
@@ -7,6 +7,8 @@ import FileCard from '../components/files/FileCard';
 import FileRow from '../components/files/FileRow';
 import FileFilters from '../components/files/FileFilters';
 import RenameModal from '../components/files/RenameModal';
+import FilePreviewModal from '../components/files/FilePreviewModal';
+import ShareModal from '../components/files/ShareModal';
 import EmptyState from '../components/common/EmptyState';
 import Loader from '../components/common/Loader';
 import Card from '../components/common/Card';
@@ -29,10 +31,31 @@ export const Files = () => {
   const [viewMode, setViewMode] = useState('grid');
   const [renameModalOpen, setRenameModalOpen] = useState(false);
   const [selectedFileForRename, setSelectedFileForRename] = useState(null);
+  const [previewModalOpen, setPreviewModalOpen] = useState(false);
+  const [selectedFileForPreview, setSelectedFileForPreview] = useState(null);
+  const [shareModalOpen, setShareModalOpen] = useState(false);
+  const [selectedFileForShare, setSelectedFileForShare] = useState(null);
+
+  useEffect(() => {
+    const query = searchParams.get('search') || '';
+    if (query !== params.search) {
+      updateParams({ search: query, page: 1 });
+    }
+  }, [searchParams, params.search, updateParams]);
 
   const handleOpenRename = (file) => {
     setSelectedFileForRename(file);
     setRenameModalOpen(true);
+  };
+
+  const handleOpenPreview = (file) => {
+    setSelectedFileForPreview(file);
+    setPreviewModalOpen(true);
+  };
+
+  const handleOpenShare = (file) => {
+    setSelectedFileForShare(file);
+    setShareModalOpen(true);
   };
 
   const handlePageChange = (newPage) => {
@@ -95,6 +118,8 @@ export const Files = () => {
               onDownload={downloadFile}
               onRename={handleOpenRename}
               onDelete={deleteFile}
+              onPreview={handleOpenPreview}
+              onShare={handleOpenShare}
             />
           ))}
         </div>
@@ -120,6 +145,8 @@ export const Files = () => {
                     onDownload={downloadFile}
                     onRename={handleOpenRename}
                     onDelete={deleteFile}
+                    onPreview={handleOpenPreview}
+                    onShare={handleOpenShare}
                   />
                 ))}
               </tbody>
@@ -164,6 +191,27 @@ export const Files = () => {
         onClose={() => setRenameModalOpen(false)}
         file={selectedFileForRename}
         onRename={renameFile}
+      />
+
+      {/* File Preview Modal */}
+      <FilePreviewModal
+        isOpen={previewModalOpen}
+        onClose={() => setPreviewModalOpen(false)}
+        file={selectedFileForPreview}
+        onDownload={downloadFile}
+        onShare={handleOpenShare}
+      />
+
+      {/* Share Modal */}
+      <ShareModal
+        isOpen={shareModalOpen}
+        onClose={() => setShareModalOpen(false)}
+        file={selectedFileForShare}
+        onShareUpdated={(updated) => {
+          if (selectedFileForPreview && selectedFileForPreview.id === updated.id) {
+            setSelectedFileForPreview(updated);
+          }
+        }}
       />
     </motion.div>
   );

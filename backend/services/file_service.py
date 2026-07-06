@@ -14,6 +14,8 @@ from models.file_model import get_file_by_id
 from models.file_model import get_files_by_owner
 from models.file_model import get_recent_files
 from models.file_model import update_file_name
+from models.file_model import update_file_share
+from models.file_model import get_file_by_share_token
 from services.s3_service import delete_from_s3
 from services.s3_service import download_from_s3
 from services.s3_service import upload_to_s3
@@ -78,6 +80,8 @@ def serialize_file(file):
         "createdAt": _datetime_to_iso(file.get("createdAt")),
         "starred": bool(file.get("starred", False)),
         "shared": bool(file.get("shared", False)),
+        "shareAccess": file.get("shareAccess", "private"),
+        "shareToken": file.get("shareToken"),
         "url": url,
     }
 
@@ -107,7 +111,10 @@ def _build_list_query(params):
 
     search = (params.get("search") or "").strip()
     if search:
-        query["originalName"] = {"$regex": search, "$options": "i"}
+        query["$or"] = [
+            {"originalName": {"$regex": search, "$options": "i"}},
+            {"filename": {"$regex": search, "$options": "i"}},
+        ]
 
     category = (params.get("category") or "").strip().upper()
     if category and category != "ALL":
@@ -429,3 +436,96 @@ def get_storage_metrics(user_id):
         **metrics_data,
         "data": metrics_data,
     }, 200
+
+
+def share_file(file_id, user_id, shared, share_access):
+    file = get_file_by_id(file_id)
+    if not file:
+        return {
+            "success": False,
+            "message": "File not found",
+            "data": None,
+        }, 404
+
+    if file["ownerId"] != user_id:
+        return {
+            "success": False,
+            "message": "Access denied",
+            "data": None,
+        }, 403
+
+    share_token = file.get("shareToken") or uuid.uuid4().hex
+    updated = update_file_share(file_id, shared, share_access, share_token)
+    updated_ser = serialize_file(updated)
+    return {
+        "success": True,
+        "message": "Share settings updated",
+        "file": updated_ser,
+        "data": {
+            "file": updated_ser,
+        },
+    }, 200
+
+
+def get_shared_file_info(share_token):
+    file = get_file_by_share_token(share_token)
+    if not file or not file.get("shared") or file.get("shareAccess") != "public":
+        return {
+            "success": False,
+            "message": "File not found or access is restricted",
+            "data": None,
+        }, 404
+
+    ser = serialize_file(file)
+    return {
+        "success": True,
+        "file": ser,
+        "data": {
+            "file": ser,
+        },
+    }, 200
+
+
+def download_shared_file(share_token):
+    file = get_file_by_share_token(share_token)
+    if not file or not file.get("shared") or file.get("shareAccess") != "public":
+        return None, {
+            "success": False,
+            "message": "File not found or access is restricted",
+            "data": None,
+        }, 404
+
+    if file.get("storageBackend") == "local":
+        file_path = file.get("path")
+        if not file_path or not os.path.exists(file_path):
+            return None, {
+                "success": False,
+                "message": "Stored file is missing",
+                "data": None,
+            }, 404
+
+        with open(file_path, "rb") as stored_file:
+            stream = BytesIO(stored_file.read())
+        stream.seek(0)
+
+        return {
+            "stream": stream,
+            "download_name": file["originalName"],
+            "mimetype": file.get("type") or "application/octet-stream",
+        }, None, 200
+
+    try:
+        response = download_from_s3(file["s3Key"])
+        stream = BytesIO(response["Body"].read())
+        stream.seek(0)
+        return {
+            "stream": stream,
+            "download_name": file["originalName"],
+            "mimetype": file.get("type") or response.get("ContentType") or "application/octet-stream",
+        }, None, 200
+    except Exception:
+        return None, {
+            "success": False,
+            "message": "File download failed",
+            "data": None,
+        }, 500

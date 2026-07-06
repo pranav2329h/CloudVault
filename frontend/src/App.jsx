@@ -16,6 +16,7 @@ const Dashboard = React.lazy(() => import('./pages/Dashboard'));
 const Files = React.lazy(() => import('./pages/Files'));
 const Upload = React.lazy(() => import('./pages/Upload'));
 const Profile = React.lazy(() => import('./pages/Profile'));
+const SharedFileView = React.lazy(() => import('./pages/SharedFileView'));
 const NotFound = React.lazy(() => import('./pages/NotFound'));
 
 export const App = () => {
@@ -73,6 +74,9 @@ export const App = () => {
                 <Route path="/profile" element={<Profile />} />
               </Route>
             </Route>
+
+            {/* Public Shared File Viewer Route */}
+            <Route path="/share/:shareToken" element={<SharedFileView />} />
 
             {/* 404 Catch All */}
             <Route path="*" element={<NotFound />} />

@@ -1,12 +1,12 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { FiArrowRight, FiDownload, FiTrash2, FiExternalLink } from 'react-icons/fi';
+import { FiArrowRight, FiDownload, FiTrash2, FiExternalLink, FiShare2 } from 'react-icons/fi';
 import Card from '../common/Card';
 import Badge from '../common/Badge';
 import EmptyState from '../common/EmptyState';
 import { formatFileSize, formatDate, getFileIconProps } from '../../utils/formatters';
 
-export const RecentUploads = ({ files = [], loading = false, onDownload, onDelete }) => {
+export const RecentUploads = ({ files = [], loading = false, onDownload, onDelete, onPreview, onShare }) => {
   return (
     <Card className="flex flex-col h-full">
       <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-100 dark:border-slate-700/60">
@@ -50,7 +50,7 @@ export const RecentUploads = ({ files = [], loading = false, onDownload, onDelet
                   <div className={`w-10 h-10 rounded-xl ${bgClass} ${colorClass} flex items-center justify-center shrink-0 shadow-sm`}>
                     <Icon className="w-5 h-5 stroke-[2]" />
                   </div>
-                  <div className="min-w-0 flex-1">
+                  <div className="min-w-0 flex-1 cursor-pointer" onClick={() => onPreview ? onPreview(file) : null}>
                     <p className="text-sm font-semibold text-slate-800 dark:text-slate-200 truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                       {file.name}
                     </p>
@@ -85,16 +85,25 @@ export const RecentUploads = ({ files = [], loading = false, onDownload, onDelet
                       <FiDownload className="w-4 h-4" />
                     </button>
                   )}
-                  {file.url && file.url !== '#' && (
-                    <a
-                      href={file.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                  {onPreview && (
+                    <button
+                      type="button"
+                      onClick={() => onPreview(file)}
                       className="p-2 rounded-lg text-slate-400 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/30 transition-colors"
-                      title="Preview / Open link"
+                      title="Preview file"
                     >
                       <FiExternalLink className="w-4 h-4" />
-                    </a>
+                    </button>
+                  )}
+                  {onShare && (
+                    <button
+                      type="button"
+                      onClick={() => onShare(file)}
+                      className="p-2 rounded-lg text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors"
+                      title="Share link / access"
+                    >
+                      <FiShare2 className="w-4 h-4" />
+                    </button>
                   )}
                   {onDelete && (
                     <button

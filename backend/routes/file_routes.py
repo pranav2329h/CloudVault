@@ -11,6 +11,9 @@ from services.file_service import list_recent_files
 from services.file_service import remove_file
 from services.file_service import rename_file
 from services.file_service import upload_file
+from services.file_service import share_file
+from services.file_service import get_shared_file_info
+from services.file_service import download_shared_file
 
 
 file_bp = Blueprint("files", __name__)
@@ -139,3 +142,35 @@ def rename(file_id):
 @jwt_required()
 def rename_legacy(file_id):
     return rename(file_id)
+
+
+@file_bp.route("/<file_id>/share", methods=["PUT"])
+@jwt_required()
+def share(file_id):
+    data = request.get_json(silent=True) or {}
+    shared = data.get("shared", False)
+    share_access = data.get("shareAccess", "private")
+    user_id = get_jwt_identity()
+
+    response, status = share_file(file_id, user_id, shared, share_access)
+    return jsonify(response), status
+
+
+@file_bp.route("/share/<share_token>", methods=["GET"])
+def get_shared(share_token):
+    response, status = get_shared_file_info(share_token)
+    return jsonify(response), status
+
+
+@file_bp.route("/share/<share_token>/download", methods=["GET"])
+def download_shared(share_token):
+    download_payload, error, status = download_shared_file(share_token)
+    if error:
+        return jsonify(error), status
+
+    return send_file(
+        download_payload["stream"],
+        as_attachment=True,
+        download_name=download_payload["download_name"],
+        mimetype=download_payload["mimetype"],
+    )

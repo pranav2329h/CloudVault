@@ -1,9 +1,9 @@
 import React from 'react';
-import { FiDownload, FiEdit2, FiTrash2, FiExternalLink, FiStar } from 'react-icons/fi';
+import { FiDownload, FiEdit2, FiTrash2, FiExternalLink, FiStar, FiShare2 } from 'react-icons/fi';
 import Badge from '../common/Badge';
 import { formatFileSize, formatDate, getFileIconProps } from '../../utils/formatters';
 
-export const FileRow = ({ file, onDownload, onRename, onDelete, onPreview }) => {
+export const FileRow = ({ file, onDownload, onRename, onDelete, onPreview, onShare }) => {
   const { icon: Icon, colorClass, bgClass } = getFileIconProps(file.name);
 
   return (
@@ -53,16 +53,25 @@ export const FileRow = ({ file, onDownload, onRename, onDelete, onPreview }) => 
       {/* Actions */}
       <td className="py-3.5 px-4 text-right whitespace-nowrap">
         <div className="flex items-center justify-end gap-1">
-          {file.url && file.url !== '#' && (
-            <a
-              href={file.url}
-              target="_blank"
-              rel="noopener noreferrer"
+          {onPreview && (
+            <button
+              type="button"
+              onClick={() => onPreview(file)}
               className="p-1.5 rounded-lg text-slate-400 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/30 transition-colors"
-              title="Preview / Open link"
+              title="Preview file"
             >
               <FiExternalLink className="w-4 h-4" />
-            </a>
+            </button>
+          )}
+          {onShare && (
+            <button
+              type="button"
+              onClick={() => onShare(file)}
+              className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors"
+              title="Share link / access"
+            >
+              <FiShare2 className="w-4 h-4" />
+            </button>
           )}
           {onDownload && (
             <button

@@ -9,6 +9,8 @@ import { DEFAULT_STORAGE_LIMIT_BYTES } from '../utils/constants';
 import StorageCard from '../components/dashboard/StorageCard';
 import StoragePieChart from '../components/charts/StoragePieChart';
 import RecentUploads from '../components/dashboard/RecentUploads';
+import FilePreviewModal from '../components/files/FilePreviewModal';
+import ShareModal from '../components/files/ShareModal';
 import { formatFileSize } from '../utils/formatters';
 
 export const Dashboard = () => {
@@ -21,8 +23,21 @@ export const Dashboard = () => {
     percentage: 0,
     totalFiles: 0,
     categories: {}
-  });
   const [metricsLoading, setMetricsLoading] = useState(true);
+  const [previewModalOpen, setPreviewModalOpen] = useState(false);
+  const [selectedFileForPreview, setSelectedFileForPreview] = useState(null);
+  const [shareModalOpen, setShareModalOpen] = useState(false);
+  const [selectedFileForShare, setSelectedFileForShare] = useState(null);
+
+  const handleOpenPreview = (file) => {
+    setSelectedFileForPreview(file);
+    setPreviewModalOpen(true);
+  };
+
+  const handleOpenShare = (file) => {
+    setSelectedFileForShare(file);
+    setShareModalOpen(true);
+  };
 
   useEffect(() => {
     const loadMetrics = async () => {
@@ -117,6 +132,8 @@ export const Dashboard = () => {
             loading={filesLoading}
             onDownload={downloadFile}
             onDelete={deleteFile}
+            onPreview={handleOpenPreview}
+            onShare={handleOpenShare}
           />
         </div>
       </div>
@@ -139,6 +156,27 @@ export const Dashboard = () => {
           Explore All Files <FiArrowRight className="w-3.5 h-3.5" />
         </Link>
       </div>
+
+      {/* File Preview Modal */}
+      <FilePreviewModal
+        isOpen={previewModalOpen}
+        onClose={() => setPreviewModalOpen(false)}
+        file={selectedFileForPreview}
+        onDownload={downloadFile}
+        onShare={handleOpenShare}
+      />
+
+      {/* Share Modal */}
+      <ShareModal
+        isOpen={shareModalOpen}
+        onClose={() => setShareModalOpen(false)}
+        file={selectedFileForShare}
+        onShareUpdated={(updated) => {
+          if (selectedFileForPreview && selectedFileForPreview.id === updated.id) {
+            setSelectedFileForPreview(updated);
+          }
+        }}
+      />
     </motion.div>
   );
 };

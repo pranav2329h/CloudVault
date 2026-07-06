@@ -132,3 +132,28 @@ def delete_file(file_id):
 
 def get_all_files_by_owner(owner_id):
     return list(files_collection.find({"ownerId": owner_id}))
+
+
+def update_file_share(file_id, shared, share_access, share_token):
+    object_id = _object_id(file_id)
+    if not object_id:
+        return None
+
+    return files_collection.find_one_and_update(
+        {"_id": object_id},
+        {
+            "$set": {
+                "shared": bool(shared),
+                "shareAccess": share_access,
+                "shareToken": share_token,
+                "updatedAt": _now(),
+            }
+        },
+        return_document=ReturnDocument.AFTER,
+    )
+
+
+def get_file_by_share_token(share_token):
+    if not share_token:
+        return None
+    return files_collection.find_one({"shareToken": share_token})

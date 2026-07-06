@@ -7,6 +7,9 @@ const normalizeFile = (file) => ({
   size: Number(file.size || 0),
   updatedAt: file.updatedAt || file.createdAt || new Date().toISOString(),
   category: file.category || 'OTHER',
+  shared: Boolean(file.shared),
+  shareAccess: file.shareAccess || 'private',
+  shareToken: file.shareToken || null,
 });
 
 const normalizeFileListResponse = (data) => ({
@@ -96,6 +99,46 @@ const fileService = {
     link.remove();
     window.URL.revokeObjectURL(url);
     return true;
+  },
+
+  /**
+   * Update file share settings (Google Drive style)
+   */
+  updateShareSettings: async (fileId, settings) => {
+    const response = await api.put(`/files/${fileId}/share`, settings);
+    return response.data?.file ? normalizeFile(response.data.file) : response.data;
+  },
+
+  /**
+   * Get shared file info by token
+   */
+  getSharedFile: async (shareToken) => {
+    const response = await api.get(`/files/share/${shareToken}`);
+    return response.data?.file ? normalizeFile(response.data.file) : response.data;
+  },
+
+  /**
+   * Download shared file by token
+   */
+  downloadSharedFile: async (shareToken, fileName = 'download') => {
+    const response = await api.get(`/files/share/${shareToken}/download`, { responseType: 'blob' });
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', fileName);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+    return true;
+  },
+
+  /**
+   * Get file blob for previewing inside modal
+   */
+  getFileBlob: async (file) => {
+    const response = await api.get(`/files/${file.id}/download`, { responseType: 'blob' });
+    return response.data;
   }
 };
 

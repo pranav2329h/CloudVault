@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { FiMenu, FiBell, FiSun, FiMoon, FiUser, FiLogOut, FiSettings, FiCheck } from 'react-icons/fi';
 import { useAuth } from '../../hooks/useAuth';
 import { useTheme } from '../../hooks/useTheme';
@@ -7,6 +7,8 @@ import SearchBar from '../common/SearchBar';
 import toast from 'react-hot-toast';
 
 export const Navbar = ({ onToggleSidebar }) => {
+  const navigate = useNavigate();
+  const location = useLocation();
   const { user, logout } = useAuth();
   const { isDark, toggleTheme } = useTheme();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -16,7 +18,6 @@ export const Navbar = ({ onToggleSidebar }) => {
     { id: 2, title: 'Storage limit increased to 15 GB', time: '1 hr ago', read: false },
     { id: 3, title: 'Project Design System.fig shared with you', time: 'Yesterday', read: true }
   ]);
-  const navigate = useNavigate();
 
   const handleLogout = () => {
     logout();
@@ -26,7 +27,9 @@ export const Navbar = ({ onToggleSidebar }) => {
 
   const handleSearch = (query) => {
     if (query.trim()) {
-      navigate(`/files?search=${encodeURIComponent(query)}`);
+      navigate(`/files?search=${encodeURIComponent(query.trim())}`);
+    } else if (location.pathname === '/files') {
+      navigate('/files');
     }
   };
 

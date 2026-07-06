@@ -23,6 +23,7 @@ Today, CloudVault operates as an enterprise-grade full-stack solution featuring 
 | **API Architecture** | Inconsistent JSON response formats across file and auth endpoints; raw error strings returned without standardized wrappers. | Enforced uniform `{ "success": boolean, "message": string, "data": object|null }` formatting across all Blueprints and global error handlers. | **FIXED** |
 | **Storage & S3** | S3 presigned URLs were not generated during file serialization, leaving frontend previews relying on fallback proxy endpoints. | Integrated `generate_download_url()` into `serialize_file()`, automatically serving temporary AWS S3 presigned URLs when S3 backend is enabled. | **FIXED** |
 | **Frontend Code Quality** | Presence of `console.error` logging statements in core views (`Dashboard.jsx`, `AuthContext.jsx`, `Sidebar.jsx`) and dummy fallback names (`'Alex'`). | Removed all debug print/console statements; replaced dummy fallbacks with clean user state lookups and silent error handling. | **FIXED** |
+| **File Operations & Sharing** | Search query filtering failed on mixed naming fields; file previews failed due to missing auth headers in browser tab links; no share link mechanism existed. | Implemented `$or` query filtering (`originalName` + `filename`) in backend; built in-app `FilePreviewModal` using authenticated Axios blob streams; added Google Drive-style public/private link sharing with `ShareModal` and `/share/:shareToken` viewer. | **FIXED** |
 | **Docker Orchestration** | `docker-compose.yml` only defined `mongodb`, `backend`, and `mongo-express`, omitting the frontend service container. | Added `frontend` service definition with multi-stage build references and shared network bridge connection to enable full-stack 1-click deployment. | **FIXED** |
 | **Security & Secrets** | Hardcoded default fallback secrets in config files; verified `.gitignore` and `.dockerignore` coverage. | Verified strict exclusion of `.env`, `venv`, `node_modules`, and `.pem` files across `.gitignore` and `.dockerignore`. Enforced environment variable injection. | **VERIFIED** |
 | **CI/CD Automation** | Jenkins deployment scripts required validation of container image tagging and SSH execution workflows. | Verified `build.sh` and `deploy.sh` pipelines, ensuring clean non-interactive zero-downtime container replacement on AWS EC2. | **VERIFIED** |
@@ -229,6 +230,9 @@ curl -i http://localhost/api/health
 
 - [x] **Repository Structure**: Confirmed original folder structure intact (`backend/`, `frontend/`, `jenkins/`, `terraform/`).
 - [x] **API Consistency**: Verified 100% compliance with `{ success, message, data }` response contract across all endpoints.
+- [x] **File Search & Filtering**: Confirmed real-time search filtering across filename and originalName attributes with React router URL synchronization.
+- [x] **Secure File Previews**: Built in-app `FilePreviewModal` rendering images, videos, audio, PDFs, and code documents via authenticated Axios streams.
+- [x] **Google Drive Style Sharing**: Implemented public/private permission toggling (`ShareModal`), unique UUID token generation, and standalone public viewer route (`/share/:shareToken`).
 - [x] **Presigned S3 URLs**: Confirmed file serialization integrates AWS S3 download link generation.
 - [x] **Debug Code Cleanup**: Removed all frontend `console.error` logs and temporary username fallbacks.
 - [x] **Docker Orchestration**: Confirmed `docker-compose.yml` orchestrates MongoDB, Backend API, and Frontend Nginx web server.

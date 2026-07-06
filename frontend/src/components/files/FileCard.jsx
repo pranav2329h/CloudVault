@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { FiDownload, FiEdit2, FiTrash2, FiExternalLink, FiStar, FiMoreVertical } from 'react-icons/fi';
+import { FiDownload, FiEdit2, FiTrash2, FiExternalLink, FiStar, FiMoreVertical, FiShare2 } from 'react-icons/fi';
 import Card from '../common/Card';
 import Badge from '../common/Badge';
 import { formatFileSize, formatDate, getFileIconProps } from '../../utils/formatters';
 
-export const FileCard = ({ file, onDownload, onRename, onDelete, onPreview }) => {
+export const FileCard = ({ file, onDownload, onRename, onDelete, onPreview, onShare }) => {
   const [showMenu, setShowMenu] = useState(false);
   const { icon: Icon, colorClass, bgClass } = getFileIconProps(file.name);
 
@@ -49,16 +49,31 @@ export const FileCard = ({ file, onDownload, onRename, onDelete, onPreview }) =>
                 }}
               />
               <div className="absolute right-0 mt-1 w-44 rounded-xl bg-white dark:bg-slate-800 shadow-xl border border-slate-200 dark:border-slate-700 py-1.5 z-20 animate-in fade-in zoom-in-95 duration-150">
-                {file.url && file.url !== '#' && (
-                  <a
-                    href={file.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={() => setShowMenu(false)}
-                    className="flex items-center gap-2.5 px-3.5 py-2 text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/60 transition-colors w-full text-left"
+                {onPreview && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowMenu(false);
+                      onPreview(file);
+                    }}
+                    className="flex items-center gap-2.5 px-3.5 py-2 text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/60 transition-colors w-full text-left font-medium"
                   >
                     <FiExternalLink className="w-3.5 h-3.5 text-slate-400" /> Preview
-                  </a>
+                  </button>
+                )}
+                {onShare && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowMenu(false);
+                      onShare(file);
+                    }}
+                    className="flex items-center gap-2.5 px-3.5 py-2 text-xs text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors w-full text-left font-medium"
+                  >
+                    <FiShare2 className="w-3.5 h-3.5" /> Share Link
+                  </button>
                 )}
                 {onDownload && (
                   <button

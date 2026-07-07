@@ -30,16 +30,15 @@ pipeline {
             }
         }
 
-        stage('Backend Dependencies') {
-            steps {
-                dir('backend') {
-                    sh '''
-                    python3 -m pip install --upgrade pip
-                    pip3 install -r requirements.txt
-                    '''
-                }
-            }
+        stage('Backend Validation') {
+    steps {
+        dir('backend') {
+            sh '''
+            python3 -m py_compile app.py
+            '''
         }
+    }
+}
 
         stage('Frontend Dependencies') {
             steps {

@@ -17,13 +17,15 @@ export const Dashboard = () => {
   const { user } = useAuth();
   const { files, loading: filesLoading, downloadFile, deleteFile } = useFiles({ limit: 6 });
   const [storageData, setStorageData] = useState({
-    totalBytes: DEFAULT_STORAGE_LIMIT_BYTES,
-    usedBytes: 0,
-    remainingBytes: DEFAULT_STORAGE_LIMIT_BYTES,
-    percentage: 0,
-    totalFiles: 0,
-    categories: {}
-  const [metricsLoading, setMetricsLoading] = useState(true);
+  totalBytes: DEFAULT_STORAGE_LIMIT_BYTES,
+  usedBytes: 0,
+  remainingBytes: DEFAULT_STORAGE_LIMIT_BYTES,
+  percentage: 0,
+  totalFiles: 0,
+  categories: {}
+});
+
+const [metricsLoading, setMetricsLoading] = useState(true);
   const [previewModalOpen, setPreviewModalOpen] = useState(false);
   const [selectedFileForPreview, setSelectedFileForPreview] = useState(null);
   const [shareModalOpen, setShareModalOpen] = useState(false);

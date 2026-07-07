@@ -7,7 +7,6 @@ pipeline {
     }
 
     environment {
-
         BACKEND_IMAGE = "pranav2329h/cloudvault-backend:latest"
         FRONTEND_IMAGE = "pranav2329h/cloudvault-frontend:latest"
 
@@ -20,6 +19,7 @@ pipeline {
     options {
         timestamps()
         disableConcurrentBuilds()
+        timeout(time: 30, unit: 'MINUTES')
     }
 
     stages {
@@ -34,7 +34,7 @@ pipeline {
             steps {
                 dir('backend') {
                     sh '''
-                    python3 -m py_compile app.py
+                        python3 -m py_compile app.py
                     '''
                 }
             }
@@ -44,7 +44,7 @@ pipeline {
             steps {
                 dir('frontend') {
                     sh '''
-                    npm install
+                        npm install
                     '''
                 }
             }
@@ -54,7 +54,7 @@ pipeline {
             steps {
                 dir('frontend') {
                     sh '''
-                    npm run build
+                        npm run build
                     '''
                 }
             }
@@ -64,7 +64,7 @@ pipeline {
             steps {
                 dir('backend') {
                     sh '''
-                    docker build -t $BACKEND_IMAGE .
+                        docker build -t $BACKEND_IMAGE .
                     '''
                 }
             }
@@ -74,7 +74,7 @@ pipeline {
             steps {
                 dir('frontend') {
                     sh '''
-                    docker build -t $FRONTEND_IMAGE .
+                        docker build -t $FRONTEND_IMAGE .
                     '''
                 }
             }
@@ -93,12 +93,12 @@ pipeline {
                 ]) {
 
                     sh '''
-                    echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+                        echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
 
-                    docker push $BACKEND_IMAGE
-                    docker push $FRONTEND_IMAGE
+                        docker push $BACKEND_IMAGE
+                        docker push $FRONTEND_IMAGE
 
-                    docker logout
+                        docker logout
                     '''
 
                 }
@@ -114,24 +114,48 @@ pipeline {
                 sshagent(credentials: ['ec2-ssh-key']) {
 
                     sh """
-                    ssh -o StrictHostKeyChecking=no ${EC2_USER}@${EC2_HOST} << 'EOF'
+ssh -o StrictHostKeyChecking=no ${EC2_USER}@${EC2_HOST} '
+set -ex
 
-                    set -e
+echo "======================================"
+echo "CloudVault Deployment Started"
+echo "======================================"
 
-                    cd ${DEPLOY_PATH}
+whoami
+hostname
+pwd
 
-                    docker compose pull
+cd ${DEPLOY_PATH}
 
-                    docker compose down
+echo "Current Directory:"
+pwd
 
-                    docker compose up -d
+echo "Pull Latest Images"
+docker compose pull
 
-                    docker image prune -af
+echo "Stop Existing Containers"
+docker compose down
 
-                    docker compose ps
+echo "Start New Containers"
+docker compose up -d
 
-                    EOF
-                    """
+echo "Waiting for Containers..."
+sleep 20
+
+echo "Container Status"
+docker compose ps
+
+echo "Docker Containers"
+docker ps
+
+echo "Removing Unused Images"
+docker image prune -af
+
+echo "======================================"
+echo "Deployment Finished Successfully"
+echo "======================================"
+'
+"""
 
                 }
 
@@ -143,17 +167,25 @@ pipeline {
 
             steps {
 
-                sh '''
+                script {
 
-                echo "Waiting for services..."
+                    retry(6) {
 
-                sleep 30
+                        sh '''
 
-                curl -f https://cloudvault-pranav.duckdns.org/health
+                            echo "Waiting for application..."
 
-                curl -f https://cloudvault-pranav.duckdns.org
+                            sleep 10
 
-                '''
+                            curl -f https://cloudvault-pranav.duckdns.org/health
+
+                            curl -f https://cloudvault-pranav.duckdns.org
+
+                        '''
+
+                    }
+
+                }
 
             }
 
@@ -166,11 +198,13 @@ pipeline {
         success {
 
             echo "======================================="
-            echo "Deployment Successful"
+            echo "CloudVault Deployment Successful"
             echo "Backend Updated"
             echo "Frontend Updated"
+            echo "Docker Images Built"
             echo "Docker Images Pushed"
-            echo "EC2 Deployment Successful"
+            echo "Deployment Completed"
+            echo "Health Check Passed"
             echo "======================================="
 
         }
@@ -179,6 +213,7 @@ pipeline {
 
             echo "======================================="
             echo "Deployment Failed"
+            echo "Check Jenkins Console Output"
             echo "======================================="
 
         }
@@ -187,9 +222,9 @@ pipeline {
 
             sh '''
 
-            docker system prune -af || true
+                docker image prune -af || true
 
-            docker builder prune -af || true
+                docker builder prune -af || true
 
             '''
 

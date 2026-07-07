@@ -11,7 +11,7 @@ pipeline {
         BACKEND_IMAGE = "pranav2329h/cloudvault-backend:latest"
         FRONTEND_IMAGE = "pranav2329h/cloudvault-frontend:latest"
 
-        EC2_HOST = "16.171.147.195"
+        EC2_HOST = "13.51.204.171"
         EC2_USER = "ubuntu"
 
         DEPLOY_PATH = "/home/ubuntu/CloudVault/backend"
@@ -31,14 +31,14 @@ pipeline {
         }
 
         stage('Backend Validation') {
-    steps {
-        dir('backend') {
-            sh '''
-            python3 -m py_compile app.py
-            '''
+            steps {
+                dir('backend') {
+                    sh '''
+                    python3 -m py_compile app.py
+                    '''
+                }
+            }
         }
-    }
-}
 
         stage('Frontend Dependencies') {
             steps {
@@ -84,11 +84,13 @@ pipeline {
 
             steps {
 
-                withCredentials([usernamePassword(
-                    credentialsId: 'dockerhub-creds',
-                    usernameVariable: 'DOCKER_USER',
-                    passwordVariable: 'DOCKER_PASS'
-                )]) {
+                withCredentials([
+                    usernamePassword(
+                        credentialsId: 'dockerhub-creds',
+                        usernameVariable: 'DOCKER_USER',
+                        passwordVariable: 'DOCKER_PASS'
+                    )
+                ]) {
 
                     sh '''
                     echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
@@ -98,6 +100,7 @@ pipeline {
 
                     docker logout
                     '''
+
                 }
 
             }
@@ -111,17 +114,23 @@ pipeline {
                 sshagent(credentials: ['ec2-ssh-key']) {
 
                     sh """
-                    ssh -o StrictHostKeyChecking=no ${EC2_USER}@${EC2_HOST} '
+                    ssh -o StrictHostKeyChecking=no ${EC2_USER}@${EC2_HOST} << 'EOF'
+
+                    set -e
 
                     cd ${DEPLOY_PATH}
 
                     docker compose pull
 
-                    docker compose up -d --remove-orphans
+                    docker compose down
+
+                    docker compose up -d
 
                     docker image prune -af
 
-                    '
+                    docker compose ps
+
+                    EOF
                     """
 
                 }
@@ -136,7 +145,9 @@ pipeline {
 
                 sh '''
 
-                sleep 20
+                echo "Waiting for services..."
+
+                sleep 30
 
                 curl -f https://cloudvault-pranav.duckdns.org/health
 
@@ -156,10 +167,10 @@ pipeline {
 
             echo "======================================="
             echo "Deployment Successful"
-            echo "Frontend Updated"
             echo "Backend Updated"
-            echo "Docker Hub Updated"
-            echo "EC2 Updated"
+            echo "Frontend Updated"
+            echo "Docker Images Pushed"
+            echo "EC2 Deployment Successful"
             echo "======================================="
 
         }

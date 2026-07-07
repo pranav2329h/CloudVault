@@ -1,204 +1,190 @@
 pipeline {
+
     agent any
 
-    options {
-        timestamps()
-        ansiColor('xterm')
-        buildDiscarder(logRotator(numToKeepStr: '10'))
+    tools {
+        nodejs 'NodeJS'
     }
 
     environment {
 
-     APP_NAME = "cloudvault-backend"
+        BACKEND_IMAGE = "pranav2329h/cloudvault-backend:latest"
+        FRONTEND_IMAGE = "pranav2329h/cloudvault-frontend:latest"
 
-     DOCKER_USERNAME = "pranav2329h"
+        EC2_HOST = "16.171.147.195"
+        EC2_USER = "ubuntu"
 
-     IMAGE_NAME = "${DOCKER_USERNAME}/${APP_NAME}"
+        DEPLOY_PATH = "/home/ubuntu/CloudVault/backend"
+    }
 
-     BUILD_TAG = "${BUILD_NUMBER}"
-
+    options {
+        timestamps()
+        disableConcurrentBuilds()
     }
 
     stages {
 
-        stage('Checkout Source') {
+        stage('Checkout') {
             steps {
-                echo "========== CHECKOUT =========="
                 checkout scm
             }
         }
 
-        stage('Workspace Info') {
-            steps {
-                sh '''
-                echo "Current Directory:"
-                pwd
-
-                echo ""
-                echo "Workspace Files:"
-                ls -la
-                '''
-            }
-        }
-
-        stage('Python Version') {
-            steps {
-                sh '''
-                python3 --version
-                pip3 --version
-                '''
-            }
-        }
-
-        stage('Create Virtual Environment') {
+        stage('Backend Dependencies') {
             steps {
                 dir('backend') {
                     sh '''
-                    python3 -m venv venv
-
-                    . venv/bin/activate
-
-                    pip install --upgrade pip
+                    python3 -m pip install --upgrade pip
+                    pip3 install -r requirements.txt
                     '''
                 }
             }
         }
 
-        stage('Install Dependencies') {
+        stage('Frontend Dependencies') {
             steps {
-                dir('backend') {
+                dir('frontend') {
                     sh '''
-                    . venv/bin/activate
-
-                    pip install -r requirements.txt
+                    npm install
                     '''
                 }
             }
         }
 
-        stage('Verify Installation') {
+        stage('Frontend Build') {
             steps {
-                dir('backend') {
+                dir('frontend') {
                     sh '''
-                    . venv/bin/activate
-
-                    pip list
+                    npm run build
                     '''
                 }
             }
         }
-    stage('Build Docker Image') {
 
-     steps
-         {
-
-            dir('backend') {
-
-            sh '''
-            docker build \
-            -t ${IMAGE_NAME}:${BUILD_TAG} \
-            -t ${IMAGE_NAME}:latest \
-            .
-            '''
-          }
-
-         }
-
-        }
-        stage('Docker Login') {
-
-    steps {
-
-        withCredentials([usernamePassword(
-            credentialsId: 'dockerhub-creds',
-            usernameVariable: 'DOCKER_USER',
-            passwordVariable: 'DOCKER_PASS'
-        )]) {
-
-            sh '''
-            echo "$DOCKER_PASS" | docker login \
-            -u "$DOCKER_USER" \
-            --password-stdin
-            '''
-
+        stage('Build Backend Image') {
+            steps {
+                dir('backend') {
+                    sh '''
+                    docker build -t $BACKEND_IMAGE .
+                    '''
+                }
+            }
         }
 
-    }
+        stage('Build Frontend Image') {
+            steps {
+                dir('frontend') {
+                    sh '''
+                    docker build -t $FRONTEND_IMAGE .
+                    '''
+                }
+            }
+        }
 
-}
-stage('Push Docker Image') {
+        stage('Push Docker Images') {
 
-    steps {
+            steps {
 
-        sh '''
-        docker push ${IMAGE_NAME}:${BUILD_TAG}
+                withCredentials([usernamePassword(
+                    credentialsId: 'dockerhub-creds',
+                    usernameVariable: 'DOCKER_USER',
+                    passwordVariable: 'DOCKER_PASS'
+                )]) {
 
-        docker push ${IMAGE_NAME}:latest
-        '''
+                    sh '''
+                    echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
 
-    }
+                    docker push $BACKEND_IMAGE
+                    docker push $FRONTEND_IMAGE
 
-}
-stage('Deploy to EC2') {
+                    docker logout
+                    '''
+                }
 
-    steps {
+            }
 
-        sshagent(credentials: ['ec2-ssh-key']) {
+        }
 
-            withCredentials([
-                string(
-                    credentialsId: 'deployment-ip',
-                    variable: 'DEPLOY_HOST'
-                )
-            ]) {
+        stage('Deploy to EC2') {
+
+            steps {
+
+                sshagent(credentials: ['ec2-ssh-key']) {
+
+                    sh """
+                    ssh -o StrictHostKeyChecking=no ${EC2_USER}@${EC2_HOST} '
+
+                    cd ${DEPLOY_PATH}
+
+                    docker compose pull
+
+                    docker compose up -d --remove-orphans
+
+                    docker image prune -af
+
+                    '
+                    """
+
+                }
+
+            }
+
+        }
+
+        stage('Health Check') {
+
+            steps {
 
                 sh '''
-                chmod +x /var/lib/jenkins/scripts/deploy.sh
 
-                /var/lib/jenkins/scripts/deploy.sh
+                sleep 20
+
+                curl -f https://cloudvault-pranav.duckdns.org/health
+
+                curl -f https://cloudvault-pranav.duckdns.org
+
                 '''
+
             }
+
         }
-    }
-}
-stage('Health Check') {
-
-    steps {
-
-        withCredentials([
-            string(
-                credentialsId: 'deployment-ip',
-                variable: 'DEPLOY_HOST'
-            )
-        ]) {
-
-            sh '''
-            sleep 15
-
-            curl http://$DEPLOY_HOST:5000/health
-            '''
-        }
-    }
-}
 
     }
 
     post {
 
-    success {
-        echo "Pipeline Completed Successfully"
+        success {
+
+            echo "======================================="
+            echo "Deployment Successful"
+            echo "Frontend Updated"
+            echo "Backend Updated"
+            echo "Docker Hub Updated"
+            echo "EC2 Updated"
+            echo "======================================="
+
+        }
+
+        failure {
+
+            echo "======================================="
+            echo "Deployment Failed"
+            echo "======================================="
+
+        }
+
+        always {
+
+            sh '''
+
+            docker system prune -af || true
+
+            docker builder prune -af || true
+
+            '''
+
+        }
+
     }
 
-    failure {
-        echo "Pipeline Failed"
-    }
-
-    always {
-
-        cleanWs()
-
-        sh 'docker image prune -af || true'
-
-    }
-}
 }
